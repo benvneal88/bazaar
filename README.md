@@ -1,5 +1,3 @@
 # bazaar
 
-A declarative container cluster powered by Docker Swarm
-
-
+A declarative repo for managing a small cluster with Nomad
