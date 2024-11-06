@@ -4,7 +4,8 @@
 
 echo "Installing necessary packages..."
 apt-get update
-apt-get install yq
+add-apt-repository ppa:rmescandon/yq
+apt-get install -y yq
 apt-get install -y nfs-common openssh-server
 
 
