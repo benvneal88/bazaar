@@ -12,12 +12,6 @@ echo "Installing necessary packages..."
 apt-get update
 apt-get install -y openssh-server
 
-
-# Add public key to authorized_keys
-echo "Adding public key to /root/.ssh/authorized_keys..."
-mv public_key.pub /root/.ssh/authorized_keys
-
-
 if [[ ! -f "$PUBKEY_FILE" ]]; then
     echo "Public key file '$PUBKEY_FILE' not found."
     exit 1
