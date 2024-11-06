@@ -7,7 +7,7 @@ apt-get update
 apt-get install -y nfs-common openssh-server
 
 
-NAS_SERVER_IP_ADDRESS="192.168.1.255"
+NAS_SERVER_IP_ADDRESS="192.168.1.225"
 echo "Identified NAS IP address as $NAS_SERVER_IP_ADDRESS"
 NAS_SHARE_DIRECTORY="/cluster_storage/init"
 
