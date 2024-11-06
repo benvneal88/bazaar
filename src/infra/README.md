@@ -7,10 +7,11 @@ Run this locally to enable remote SSH
     apt-get install curl
 
     curl -O https://raw.githubusercontent.com/benvneal88/bazaar/refs/heads/main/src/infra/hosts.yaml
-    curl -O https://raw.githubusercontent.com/benvneal88/bazaar/refs/heads/main/src/infra/host_init.sh
-
-    chmod +x host_init.sh
-    ./host_init.sh
+    curl -O https://raw.githubusercontent.com/benvneal88/bazaar/refs/heads/main/src/infra/hosts/init.sh
+    curl -O https://raw.githubusercontent.com/benvneal88/bazaar/refs/heads/main/src/infra/hosts/public_key.pub
+    
+    chmod +x init.sh
+    ./init.sh
 
 
 Test ssh is enabled:
