@@ -4,6 +4,4 @@ hosts:
   - name: bazaar-2
     ip_address: 0
   - name: bazaar-3
-    ip_address: 192.168.1.151
-
-  
+    ip_address: 0
