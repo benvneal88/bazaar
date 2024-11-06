@@ -11,10 +11,12 @@ echo "Configuring SSH directory and permissions..."
 mkdir -p /root/.ssh
 chmod 700 /root/.ssh
 
+mkdir -p /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+
 # Add public key to authorized_keys
 echo "Adding public key to /root/.ssh/authorized_keys..."
-mv "public_key.pub" >> /root/.ssh/authorized_keys
-chmod 600 /root/.ssh/authorized_keys
+mv public_key.pub /root/.ssh/authorized_keys
 
 # Configure SSH to allow root login with key-based authentication
 echo "Configuring SSH to allow root login with key-based authentication..."
