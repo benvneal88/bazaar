@@ -4,12 +4,10 @@
 
 echo "Installing necessary packages..."
 apt-get update
-add-apt-repository ppa:rmescandon/yq
-apt-get install -y yq
 apt-get install -y nfs-common openssh-server
 
 
-NAS_SERVER_IP_ADDRESS=$(yq eval '.nas_ip_address' "hosts.yaml")
+NAS_SERVER_IP_ADDRESS="192.168.1.255"
 echo "Identified NAS IP address as $NAS_SERVER_IP_ADDRESS"
 NAS_SHARE_DIRECTORY="/cluster_storage/init"
 
