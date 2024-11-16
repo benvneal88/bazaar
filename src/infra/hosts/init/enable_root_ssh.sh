@@ -37,13 +37,12 @@ else
     echo "Key added to '$AUTHORIZED_KEYS_FILE'."
 fi
 
-
-# # Configure SSH to allow root login with key-based authentication
-# echo "Configuring SSH to allow root login with key-based authentication..."
-# sed -i 's/^#PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
-# sed -i 's/^PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
-# sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-# sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+# Configure SSH to allow root login with key-based authentication
+echo "Configuring SSH to allow root login with key-based authentication..."
+sed -i 's/^#PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+sed -i 's/^PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
 
 # Restart SSH service
 echo "Restarting SSH service..."

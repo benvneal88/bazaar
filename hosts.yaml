@@ -1,7 +1,0 @@
-nas_ip_address: 192.168.1.255
-
-hosts:
-  - name: bazaar-2
-    ip_address: 0
-  - name: bazaar-3
-    ip_address: 0
