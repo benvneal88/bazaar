@@ -11,6 +11,9 @@
       netmask: 255.255.255.0
       dns: 8.8.8.8
 
+    vritual_bridge_config:
+      
+
   tasks:
     - name: Update and upgrade the system
       apt:
@@ -35,6 +38,13 @@
             netmask {{ static_ip_config.netmask }}
             gateway {{ static_ip_config.gateway }}
             dns-nameservers {{ static_ip_config.dns }}
+          auto vmbr0
+          iface vmbr0 inet static
+                  address 192.168.10.2/24
+                  gateway 192.168.10.1
+                  bridge-ports eno1
+                  bridge-stp off
+                  bridge-fd 0
 
     - name: Ensure loopback entry exists
       lineinfile:
