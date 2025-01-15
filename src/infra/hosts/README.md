@@ -5,11 +5,11 @@ On the new host, run these commands to enable root SSH into the host.
     su - root
     apt-get install curl
 
-    curl -O https://raw.githubusercontent.com/benvneal88/bazaar/refs/heads/main/src/infra/hosts/init/enable_root_ssh.sh
+    curl -O https://raw.githubusercontent.com/benvneal88/bazaar/refs/heads/main/src/infra/hosts/init/bin/enable_root_ssh.sh
     curl -O https://raw.githubusercontent.com/benvneal88/bazaar/refs/heads/main/src/infra/hosts/init/keys/node_key.pub
 
-    chmod +x init.sh
-    ./init.sh
+    chmod +x enable_root_ssh.sh
+    ./enable_root_ssh.sh
 
 
 Test ssh authentication is working. SSH with key file will bypass a password requirement.
@@ -28,9 +28,13 @@ Install Ansbile
 
 Congiure hosts file at `src/infra/hosts/inventory.yml`
 
-Verify hosts are running
+Verify hosts are running:
 
     ansible -i src/infra/hosts/inventory.yml all -m ping
+
+Restart hosts if needed:
+
+    ansible all -i src/infra/hosts/inventory.yml -b -m reboot --become
 
 
 ## Manage Nodes
@@ -39,6 +43,13 @@ Run the ansible playbooks to install Proxmox VE on a new debian image.
 
     ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/configure_networking.yml
     ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/configure_proxmox_cluster.yml
+
+
+# Create VM Template
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_api_token.yml
+
+    # https://github.com/SpaceTerran/Ansible-Proxmox-Ubuntu-Cloud-Init-Template
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_cloud_init_templates.yml
 
 Some manual steps are need to add a new node to the Proxmox VE cluster
 
@@ -79,15 +90,21 @@ https://registry.tf-registry-prod-use1.terraform.io/providers/Terraform-for-Prox
     version=0.0.1
     arch=linux_arm64
     mkdir -p ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
+    cp bin/terraform-provider-proxmox ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
+    ls -al ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
 
-cp bin/terraform-provider-proxmox ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
-ls -al ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
 
+## Troubleshooting Networking
+
+    cat /etc/network/interfaces
 
 
 ## Initializing VMs for Terraform
 
 Use clout-init image to create a template
+
+https://pve.proxmox.com/wiki/Cloud-Init_Support
+https://github.com/Terraform-for-Proxmox/terraform-provider-proxmox/blob/master/docs/guides/cloud_init.md
 
 https://registry.tf-registry-prod-use1.terraform.io/providers/Terraform-for-Proxmox/proxmox/latest/docs/guides/cloud_init
 
@@ -95,3 +112,30 @@ Copy vm keys to the Proxmox node. These will get added to the VM and the proxmox
 
     scp -i ~/.ssh/bazaar_root_key /Users/ben/dev/bazaar/src/infra/hosts/init/keys/vm_key.pub  root@192.168.1.195:/root/.ssh/vm_key.pub
     scp -i ~/.ssh/bazaar_root_key /Users/ben/dev/bazaar/src/infra/hosts/init/keys/vm_key  root@192.168.1.195:/root/.ssh/vm_key
+
+
+Create 
+
+
+## Set up Minio for Object Storage
+
+
+minio/minio
+
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio
+    container_name: minio-1
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: adminpishi
+    volumes:
+      - /share/CACHEDEV1_DATA/Container/container-station-data/application/mino-1:/data
+    command: server /data --console-address :9001
+

@@ -11,14 +11,24 @@
       netmask: 255.255.255.0
       dns: 8.8.8.8
 
-    vritual_bridge_config:
-      
-
   tasks:
+    - name: Comment out the enterprise repository
+      lineinfile:
+        path: /etc/apt/sources.list.d/pve-enterprise.list
+        regexp: '^deb https://enterprise.proxmox.com/debian/pve'
+        state: absent
+
+    - name: Add the non-subscription repository
+      lineinfile:
+        path: /etc/apt/sources.list
+        line: 'deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription'
+        state: present
+        
     - name: Update and upgrade the system
       apt:
         update_cache: yes
         upgrade: dist
+
 
     - name: Install necessary dependencies
       apt:
@@ -32,19 +42,15 @@
           auto lo
           iface lo inet loopback
 
-          auto {{ static_ip_config.interface_name }}
-          iface {{ static_ip_config.interface_name }} inet static
-            address {{ hostvars[inventory_hostname].ansible_host }}
-            netmask {{ static_ip_config.netmask }}
-            gateway {{ static_ip_config.gateway }}
-            dns-nameservers {{ static_ip_config.dns }}
+          iface {{ static_ip_config.interface_name }} inet manual
+
           auto vmbr0
           iface vmbr0 inet static
-                  address 192.168.10.2/24
-                  gateway 192.168.10.1
-                  bridge-ports eno1
+                  address {{ hostvars[inventory_hostname].ansible_host }}/24
+                  gateway {{ static_ip_config.gateway }}
+                  bridge-ports {{ static_ip_config.interface_name }}
                   bridge-stp off
-                  bridge-fd 0
+                  bridge-fd 0                  
 
     - name: Ensure loopback entry exists
       lineinfile:

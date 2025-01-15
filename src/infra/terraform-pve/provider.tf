@@ -8,8 +8,8 @@ terraform {
 }
 
 provider "proxmox" {
-  pm_api_url = "https://${var.proxmox_api_node.ip_address}:{${var.proxmox_api_node.port}}/api2/json"
-  pm_user    = var.proxmox_api_user
-  #pm_password = var.proxmox_password
-  pm_tls_insecure = true
+    pm_api_url = "https://${var.pve_ip_address}:${var.pve_port}/api2/json"
+    pm_password = var.pve_tf_password
+    pm_user = var.pve_tf_user
+    pm_tls_insecure = true
 }

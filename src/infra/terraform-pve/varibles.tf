@@ -1,21 +1,30 @@
-variable "proxmox_api_password" {
+variable "pve_tf_password" {
   description = "Password for Proxmox user"
   type        = string
   sensitive   = true
 }
 
-
-variable "proxmox_api_user" {
+variable "pve_tf_user" {
   description = "Password for Proxmox user"
   type        = string
-  default = "terraform-prov@pve"
 }
 
-variable "proxmox_api_node" {
-    description = "Main Proxmox node for tf api calls"
-    default = {
-        ip_address = "192.168.1.195"
-        port = "8006"
-    }
+variable "pve_ip_address" {
+  description = "IP address for primary pve node"
+  type        = string
 }
 
+variable "pve_port" {
+  description = "Port for primary pve node"
+  type        = string
+}
+
+variable "pve_domain" {
+  description = "Proxmox default domain"
+  type        = string
+}
+
+variable "pve_default_node" {
+  description = "Proxmox default noe"
+  type        = string
+}

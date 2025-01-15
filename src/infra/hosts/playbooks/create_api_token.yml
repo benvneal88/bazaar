@@ -1,0 +1,38 @@
+- name: Create Proxmox API token with root password
+  hosts: bazaar-1
+  vars_files:
+    - ../secrets.yml
+
+  tasks:
+    - name: Authenticate with Proxmox to get a session token
+      uri:
+        url: "https://{{ proxmox_host }}:8006/api2/json/access/ticket"
+        method: POST
+        body:
+          username: "{{ proxmox_root_user }}"
+          password: "{{ proxmox_root_password }}"
+        body_format: json
+        validate_certs: false
+      register: auth_response
+
+    - name: Check authentication response
+      debug:
+        var: auth_response.json
+
+    - name: Create API token for user
+      uri:
+        url: "https://{{ proxmox_host }}:8006/api2/json/access/users/{{ proxmox_api_user }}/token/{{ proxmox_api_token_id }}"
+        method: POST
+        headers:
+          Cookie: "PVEAuthCookie={{ auth_response.json.data.ticket }}"
+          CSRFPreventionToken: "{{ auth_response.json.data.CSRFPreventionToken }}"
+        body:
+          tokenid: "{{ proxmox_api_token_id }}"
+          privsep: false
+        body_format: json
+        validate_certs: false
+      register: token_creation_result
+
+    - name: Display token creation result
+      debug:
+        var: token_creation_result.json
