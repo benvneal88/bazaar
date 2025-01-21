@@ -1,0 +1,68 @@
+- name: Clone VM from Cloud-Init Template
+  hosts: bazaar-1
+  become: true
+  vars_files:
+  - ../vars.secrets.yml
+  - ../vars.commons.yml
+
+  vars:
+  - template_name: "debian-12.cloudinit-template"
+  - new_vm_name: "test-vm.dev1.bazaar.com"
+  - new_vm_id: "1001"
+  - user_data_file: "cloudinit-user-data.yml.j2"
+
+  tasks:
+    - name: Clone a VM from the template
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_token_id: "{{ proxmox_api_token_id }}"
+        api_token_secret: "{{ proxmox_api_secret }}"
+        validate_certs: false
+        node: "{{ node_target }}"
+        name: "{{ new_vm_name }}"
+        clone: "{{ template_name }}"
+        newid: "{{ new_vm_id }}"
+        full: true
+        state: present
+        # memory: 2048
+        # cores: 2
+        # sockets: 1
+        # net:
+        #   net0: virtio,bridge=vmbr0
+      register: clone_result
+
+    - name: Debug clone result
+      debug:
+        var: clone_result
+
+    - name: Generate SHA-512 hashed password
+      ansible.builtin.set_fact:
+        encrypted_password: "{{ proxmox_ci_password | password_hash('sha512') }}"
+
+    - name: Copy user-data to Proxmox node
+      ansible.builtin.template:
+        src: "{{ user_data_file }}"
+        remote_src: false
+        dest: "{{ proxmox_storage_path }}/snippets/cloud-init-user-data.yaml"
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: Attach user-data to VM
+      ansible.builtin.shell: |
+        qm set {{ new_vm_id }} --cicustom "user={{ proxmox_storage }}:snippets/cloud-init-user-data.yaml" --ipconfig0 ip=dhcp
+      args:
+        executable: /bin/bash
+      register: attach_user_data
+      changed_when: attach_user_data.rc == 0
+      failed_when: attach_user_data.rc not in [0]
+
+    - name: Regenerate cloudinit disk
+      ansible.builtin.shell: |
+        qm cloudinit update {{ new_vm_id }}
+      args:
+        executable: /bin/bash
+      register: regenerate_cloud_init
+      changed_when: regenerate_cloud_init.rc == 0
+      failed_when: regenerate_cloud_init.rc not in [0]

@@ -1,30 +1,23 @@
 #cloud-config
-
-# Creation of the user account and associated SSH keys
-user: {{ ciuser }}
-password: {{ encrypted_password }}
-ssh_authorized_keys:
-  - {{ sshkey }}
-chpasswd:
-  expire: False
-# This section enable's SUDO without a password
 users:
-  - name: {{ ciuser }}
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    groups: users, admin
-    shell: /bin/bash
-# Place distro specific packages here
+  - name: {{ proxmox_ci_user }} # Username to create
+    #hashed_passwd: {{ encrypted_password }}
+    lock_passwd: false          # Unlocks the account
+    groups: sudo                # Adds the user to the sudo group
+    shell: /bin/bash            # Default shell for the user
+    ssh_authorized_keys:        # SSH public key for key-based authentication
+      - {{ sshkey }}
+ssh_pwauth: false               # Enables SSH password authentication
+disable_root: false             # Ensures root login is not disabled
+chpasswd:                       # Handles plain-text password authentication
+  expire: false                 # Prevents the password from expiring
+hostname: {{ new_vm_name }}                  # Sets the hostname for the VM
 packages:
   - qemu-guest-agent
-package_update: true
-package_upgrade: true
-package_reboot_if_required: true
-# Ensures qemu-guest-agent is enabled and started. Note that if you have 
-# "package_reboot_if_required" set to "true" and you are installing
-# something like linux-generic-hwe-22.04, this will cause the system 
-# to reboot. Consequently, the command "systemctl start --no-block
-# qemu-guest-agent.service" is not strictly necessary.
+package_update: true            # Runs an `apt-get update`
+package_upgrade: true           # Runs an `apt-get upgrade`
 runcmd:
   - [ systemctl, daemon-reload ]
   - [ systemctl, enable, qemu-guest-agent.service ]
   - [ systemctl, start, --no-block, qemu-guest-agent.service ]
+  

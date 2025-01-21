@@ -44,17 +44,28 @@ Run the ansible playbooks to install Proxmox VE on a new debian image.
     ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/configure_networking.yml
     ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/configure_proxmox_cluster.yml
 
-
-# Create VM Template
-    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_api_token.yml
-
-    # https://github.com/SpaceTerran/Ansible-Proxmox-Ubuntu-Cloud-Init-Template
-    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_cloud_init_templates.yml
-
 Some manual steps are need to add a new node to the Proxmox VE cluster
 
     pvecm add "{host_node_ip}"
 
+Once the Nodes are configured with PVE and added to the cluster create the VMs:
+
+# Create API Token for Ansible User
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_api_token.yml
+
+# Create Cloud Init Template
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_templates.yml
+
+# Clone VM from Template
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_clones.yml
+
+# SSH into VMs
+
+    ssh -i src/infra/hosts/init/keys/vm_key ansible@<vm_ip_address>
+
+
+
+<!-- 
 
 ## Setup Proxmox VMs
 
@@ -91,7 +102,7 @@ https://registry.tf-registry-prod-use1.terraform.io/providers/Terraform-for-Prox
     arch=linux_arm64
     mkdir -p ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
     cp bin/terraform-provider-proxmox ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
-    ls -al ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
+    ls -al ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/ -->
 
 
 ## Troubleshooting Networking

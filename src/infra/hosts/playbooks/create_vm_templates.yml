@@ -1,0 +1,128 @@
+- name: Create cloud images
+  # This needs to be a proxmox host, since some of the commands depend on `qm`.
+  hosts: bazaar-1
+
+  vars_files:
+  - ../vars.secrets.yml
+  - ../vars.commons.yml
+
+  vars:
+  - template_name: "debian-12.cloudinit-template"
+  - cloud_image_name: "debian-12-generic-amd64-20250115-1993.qcow2"
+  - cloud_image_url: "https://cdimage.debian.org/images/cloud/bookworm/20250115-1993/{{ cloud_image_name }}"
+  - cloud_image_path: "/media/pve_templates/{{ cloud_image_name }}"
+  - vm_id: 1000
+  - citype: "nocloud"
+  - cores: 2
+  - memory: 2048
+  - resize_disk: 15
+  - vm_public_key_file: "/root/.ssh/vm_key.pub"
+  - QEMU_AGENT: true # Set this to false if you prefer not to use the QEMU agent.
+  - UEFI: true # Set this to false if you would rather use a non-UEFI image.
+
+  
+  tasks:
+    - name: Check if the cloud image already exists
+      ansible.builtin.stat:
+        path: "{{ cloud_image_path }}"
+      register: cloud_image_exists
+
+    - name: Download the cloud image
+      ansible.builtin.get_url:
+        url: "{{ cloud_image_url }}"
+        dest: "{{ cloud_image_path }}"
+        owner: root
+        group: root
+        mode: '0644'
+        timeout: 60
+      when: not cloud_image_exists.stat.exists
+
+    - name: Remove existing cloud image
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_token_id: "{{ proxmox_api_token_id }}"
+        api_token_secret: "{{ proxmox_api_secret }}"
+        vmid: "{{ vm_id }}"
+        state: absent
+
+    - name: Create VM for template
+      ansible.builtin.shell: "qm create {{ vm_id }} --name {{ template_name }} --core {{ cores }} --memory {{ memory }} --net0 virtio,bridge=vmbr0"
+      args:
+        executable: /bin/bash
+      register: create_vm
+      changed_when: create_vm.rc == 0
+      failed_when: create_vm.rc not in [0]
+
+    - name: Create a directory on the remote machine
+      ansible.builtin.file:
+        path: "{{ proxmox_storage_path }}/images/{{ vm_id }}/"
+        state: directory
+        owner: root           # (Optional) Set directory owner
+        group: root          # (Optional) Set directory group
+        mode: '0755'          # (Optional) Set directory permissions
+
+    - name: Import the disk to Proxmox
+      ansible.builtin.shell: |
+        qm importdisk {{ vm_id }} {{ cloud_image_path }} {{ proxmox_storage }} --format qcow2
+      args:
+        executable: /bin/bash
+      register: import_disk
+      changed_when: import_disk.rc == 0
+      failed_when: import_disk.rc not in [0]
+
+    - name: Attach the disk to the VM
+      ansible.builtin.shell: |
+        qm set {{ vm_id }} --scsihw virtio-scsi-pci --scsi0 {{ proxmox_storage }}:0,import-from={{ cloud_image_path }}
+      args:
+        executable: /bin/bash
+      register: attach_disk
+      changed_when: attach_disk.rc == 0
+      failed_when: attach_disk.rc not in [0]
+
+    - name: Configure add Cloud-Init drive, set serial console, boot order, and network to dhcp
+      ansible.builtin.shell: |
+        qm set {{ vm_id }} --ide2 {{ proxmox_storage }}:cloudinit --boot 'order=scsi0;ide2' --serial0 socket --vga serial0 --citype {{ citype }} 
+      args:
+        executable: /bin/bash
+      register: cloud_init
+      changed_when: cloud_init.rc == 0
+      failed_when: cloud_init.rc not in [0]
+
+    - name: Enable QEMU Agent
+      ansible.builtin.shell: |
+        qm set {{ vm_id }} --agent 1
+      args:
+        executable: /bin/bash
+      when: QEMU_AGENT
+      register: enable_qemu_agent
+      changed_when: enable_qemu_agent.rc == 0
+      failed_when: enable_qemu_agent.rc not in [0]
+
+    - name: Resize disk
+      ansible.builtin.shell: |
+        qm resize {{ vm_id }} scsi0 +{{ resize_disk }}G
+      args:
+        executable: /bin/bash
+      register: resize_disk
+      changed_when: resize_disk.rc == 0
+      failed_when: resize_disk.rc not in [0]
+
+    - name: Enable UEFI
+      ansible.builtin.shell: |
+        qm set {{ vm_id }}  --machine q35 --efidisk0 {{ proxmox_storage }}:1,format=qcow2
+      args:
+        executable: /bin/bash
+      when: UEFI
+      register: enable_uefi
+      changed_when: enable_uefi.rc == 0
+      failed_when: enable_uefi.rc not in [0]
+
+    - name: Convert VM to template
+      ansible.builtin.shell: |
+        qm template {{ vm_id }}
+      args:
+        executable: /bin/bash
+      register: convert_template
+      changed_when: convert_template.rc == 0
+      failed_when: convert_template.rc not in [0]
