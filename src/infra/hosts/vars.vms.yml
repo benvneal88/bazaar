@@ -1,0 +1,48 @@
+defaults: &default_values
+  memory: 4096        # Default memory in MB
+  cores: 2            # Default number of CPU cores
+  disk_size: 20       # Default disk size in GB
+  template_name: "debian-12-bookworm.cloudinit-template"
+
+vm_definitions:
+  - vm_name: "vm10"
+    vm_id: 110
+    node: "bazaar-1"
+    ip_address: 192.168.1.10
+    description: "small VM on bazaar-1"
+    <<: *default_values
+    
+  - vm_name: "vm12"
+    vm_id: 112
+    node: "bazaar-1"
+    ip_address: 192.168.1.12
+    description: "Small VM1 on bazaar-1"
+    <<: *default_values
+
+  # - vm_name: "vm21"
+  #   vm_id: 22
+  #   node: "bazaar-2"
+  #   ip_address: 192.168.1.21
+  #   description: "Small VM2 on bazaar-2"
+  #   template_name: "debian-12-bookworm.small.cloudinit-template"
+  #   cores: 2
+  #   memory: 2048
+  #   disk_size: 15
+  # - vm_name: "vm30"
+  #   vm_id: 30
+  #   node: "bazaar-3"
+  #   ip_address: 192.168.1.30
+  #   description: "Small VM3 on bazaar-3"
+  #   template_name: "debian-12-bookworm.small.cloudinit-template"
+  #   cores: 2
+  #   memory: 2048
+  #   disk_size: 15
+  # - vm_name: "vm31"
+  #   vm_id: 31
+  #   node: "bazaar-3"
+  #   ip_address: 192.168.1.31
+  #   description: "Small vm on bazaar-3"
+  #   template_name: "debian-12-bookworm.small.cloudinit-template"
+  #   cores: 2
+  #   memory: 2048
+  #   disk_size: 15

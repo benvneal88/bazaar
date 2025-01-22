@@ -1,16 +1,45 @@
 all:
   vars:
-    ansible_python_interpreter: auto_silent
-  hosts:
-    bazaar-1:
-      ansible_host: 192.168.1.195
-      ansible_user: root
-      ansible_ssh_private_key_file: ~/.ssh/bazaar_root_key
-    bazaar-2:
-      ansible_host: 192.168.1.11
-      ansible_user: root
-      ansible_ssh_private_key_file: ~/.ssh/bazaar_root_key
-    bazaar-3:
-      ansible_host: 192.168.1.151
-      ansible_user: root
-      ansible_ssh_private_key_file: ~/.ssh/bazaar_root_key
+    ansible_user: root
+    ansible_ssh_private_key_file: ~/.ssh/bazaar_root_key
+
+  children:
+    nodes:
+      hosts:
+        bazaar-1:
+          ansible_host: 192.168.1.195
+        bazaar-2:
+          ansible_host: 192.168.1.11
+        bazaar-3:
+          ansible_host: 192.168.1.151
+    vms:
+      hosts:
+        vm10:
+          ansible_host: 192.168.1.10
+        vm20:
+          ansible_host: 192.168.1.20
+        vm21:
+          ansible_host: 192.168.1.21
+        vm30:
+          ansible_host: 192.168.1.30
+        vm31:
+          ansible_host: 192.168.1.31 
+    templates:
+      hosts:
+        bazaar-1:
+            ansible_host: 192.168.1.195
+            template_defintions:
+              - template_name: "debian-12-bookworm.cloudinit-template"
+                vm_id: 100
+                cloud_image_name: "debian-12-generic-amd64-20250115-1993.qcow2"
+                cloud_image_url_base: "https://cdimage.debian.org/images/cloud/bookworm/20250115-1993/"
+                cores: 1
+                memory: 1024
+                disk_size: 15
+              # - template_name: "debian-12-bookworm.cloudinit-template"
+              #   vm_id: 000
+              #   cloud_image_name: "debian-12-generic-amd64-20250115-1993.qcow2"
+              #   cloud_image_url_base: "https://cdimage.debian.org/images/cloud/bookworm/20250115-1993/"
+              #   cores: 4
+              #   memory: 1400
+              #   disk_size: 15

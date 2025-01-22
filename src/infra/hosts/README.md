@@ -26,23 +26,23 @@ On the control host which can be the local machine. Setup Ansigle
 Install Ansbile
     brew install ansible
 
-Congiure hosts file at `src/infra/hosts/inventory.yml`
+Congiure hosts file at `src/infra/hosts/inventory_nodes.yml`
 
 Verify hosts are running:
 
-    ansible -i src/infra/hosts/inventory.yml all -m ping
+    ansible -i src/infra/hosts/inventory_nodes.yml all -m ping
 
 Restart hosts if needed:
 
-    ansible all -i src/infra/hosts/inventory.yml -b -m reboot --become
+    ansible all -i src/infra/hosts/inventory_nodes.yml -b -m reboot --become
 
 
 ## Manage Nodes
 
 Run the ansible playbooks to install Proxmox VE on a new debian image.
 
-    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/configure_networking.yml
-    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/configure_proxmox_cluster.yml
+    ansible-playbook -i src/infra/hosts/inventory_nodes.yml src/infra/hosts/playbooks/configure_networking.yml
+    ansible-playbook -i src/infra/hosts/inventory_nodes.yml src/infra/hosts/playbooks/configure_proxmox_cluster.yml
 
 Some manual steps are need to add a new node to the Proxmox VE cluster
 
@@ -51,16 +51,15 @@ Some manual steps are need to add a new node to the Proxmox VE cluster
 Once the Nodes are configured with PVE and added to the cluster create the VMs:
 
 # Create API Token for Ansible User
-    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_api_token.yml
+    ansible-playbook -i src/infra/hosts/inventory_nodes.yml src/infra/hosts/playbooks/create_api_token.yml
 
 # Create Cloud Init Template
-    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_templates.yml
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_templates.yml --limit "templates"
 
-# Clone VM from Template
-    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_clones.yml
+# Create VM from Template
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_clones.yml --limit "nodes"
 
 # SSH into VMs
-
     ssh -i src/infra/hosts/init/keys/vm_key ansible@<vm_ip_address>
 
 

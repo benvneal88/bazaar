@@ -4,14 +4,36 @@
   vars_files:
   - ../vars.secrets.yml
   - ../vars.commons.yml
+  - ../vars.vms.yml
 
   vars:
-  - template_name: "debian-12.cloudinit-template"
-  - new_vm_name: "test-vm.dev1.bazaar.com"
-  - new_vm_id: "1001"
-  - user_data_file: "cloudinit-user-data.yml.j2"
+  - pool_id: "dev1"
 
   tasks:
+    # - name: Stop existing VMs
+    #   community.general.proxmox_kvm:
+    #     api_host: "{{ proxmox_host }}"
+    #     api_user: "{{ proxmox_api_user }}"
+    #     api_token_id: "{{ proxmox_api_token_id }}"
+    #     api_token_secret: "{{ proxmox_api_secret }}"
+    #     validate_certs: false
+    #     node: "{{ item.node }}"
+    #     vmid: "{{ item.vm_id }}"
+    #     state: stopped
+    #   loop: "{{ vm_definitions }}"
+    
+    - name: Remove existing VMs
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_token_id: "{{ proxmox_api_token_id }}"
+        api_token_secret: "{{ proxmox_api_secret }}"
+        validate_certs: false
+        node: "{{ item.node }}"
+        vmid: "{{ item.vm_id }}"
+        state: absent
+      loop: "{{ vm_definitions }}"
+
     - name: Clone a VM from the template
       community.general.proxmox_kvm:
         api_host: "{{ proxmox_host }}"
@@ -19,50 +41,48 @@
         api_token_id: "{{ proxmox_api_token_id }}"
         api_token_secret: "{{ proxmox_api_secret }}"
         validate_certs: false
-        node: "{{ node_target }}"
-        name: "{{ new_vm_name }}"
-        clone: "{{ template_name }}"
-        newid: "{{ new_vm_id }}"
+        node: "{{ item.node }}"
+        name: "{{ item.vm_name }}.{{ pool_id }}.bazaar.com"
+        clone: "{{ item.template_name }}"
+        newid: "{{ item.vm_id }}"
+        pool: "{{ pool_id }}"
+        memory: "{{ item.memory }}"  # Increase the memory (in MB)
+        cores: "{{ item.cores }}"  # Increase the CPU cores
         full: true
         state: present
-        # memory: 2048
-        # cores: 2
-        # sockets: 1
-        # net:
-        #   net0: virtio,bridge=vmbr0
       register: clone_result
+      loop: "{{ vm_definitions }}"
 
-    - name: Debug clone result
-      debug:
-        var: clone_result
+    # - name: Generate SHA-512 hashed password
+    #   ansible.builtin.set_fact:
+    #     encrypted_password: "{{ proxmox_ci_password | password_hash('sha512') }}"
 
-    - name: Generate SHA-512 hashed password
-      ansible.builtin.set_fact:
-        encrypted_password: "{{ proxmox_ci_password | password_hash('sha512') }}"
-
-    - name: Copy user-data to Proxmox node
+    - name: Inject cloud-init user data for VM Instance
       ansible.builtin.template:
-        src: "{{ user_data_file }}"
+        src: "cloudinit/{{ user_data_file }}"
         remote_src: false
-        dest: "{{ proxmox_storage_path }}/snippets/cloud-init-user-data.yaml"
+        dest: "{{ proxmox_storage_path }}/snippets/{{ pool_id }}-{{ item.vm_id }}-cloud-init-user-data.yaml"
         owner: root
         group: root
         mode: '0644'
+      loop: "{{ vm_definitions }}"
     
     - name: Attach user-data to VM
       ansible.builtin.shell: |
-        qm set {{ new_vm_id }} --cicustom "user={{ proxmox_storage }}:snippets/cloud-init-user-data.yaml" --ipconfig0 ip=dhcp
+        qm set {{ item.vm_id }} --cicustom "user={{ proxmox_storage }}:snippets/{{ pool_id }}-{{ item.vm_id }}-cloud-init-user-data.yaml" --ipconfig0 ip={{ item.ip_address }}/24,gw={{ gateway_ip_address }}
       args:
         executable: /bin/bash
       register: attach_user_data
       changed_when: attach_user_data.rc == 0
       failed_when: attach_user_data.rc not in [0]
+      loop: "{{ vm_definitions }}"
 
     - name: Regenerate cloudinit disk
       ansible.builtin.shell: |
-        qm cloudinit update {{ new_vm_id }}
+        qm cloudinit update {{ item.vm_id }}
       args:
         executable: /bin/bash
       register: regenerate_cloud_init
       changed_when: regenerate_cloud_init.rc == 0
       failed_when: regenerate_cloud_init.rc not in [0]
+      loop: "{{ vm_definitions }}"

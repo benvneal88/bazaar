@@ -1,7 +1,6 @@
 #cloud-config
 users:
   - name: {{ proxmox_ci_user }} # Username to create
-    #hashed_passwd: {{ encrypted_password }}
     lock_passwd: false          # Unlocks the account
     groups: sudo                # Adds the user to the sudo group
     shell: /bin/bash            # Default shell for the user
@@ -11,7 +10,7 @@ ssh_pwauth: false               # Enables SSH password authentication
 disable_root: false             # Ensures root login is not disabled
 chpasswd:                       # Handles plain-text password authentication
   expire: false                 # Prevents the password from expiring
-hostname: {{ new_vm_name }}                  # Sets the hostname for the VM
+hostname: {{ item.vm_name }}.{{ pool_id }}.bazaar.com # Sets the hostname for the VM
 packages:
   - qemu-guest-agent
 package_update: true            # Runs an `apt-get update`
