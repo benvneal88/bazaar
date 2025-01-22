@@ -3,6 +3,7 @@ defaults: &default_values
   cores: 2            # Default number of CPU cores
   disk_size: 20       # Default disk size in GB
   template_name: "debian-12-bookworm.cloudinit-template"
+  pool_id: "dev1"
 
 vm_definitions:
   - vm_name: "vm10"

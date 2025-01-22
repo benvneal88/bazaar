@@ -6,8 +6,6 @@
   - ../vars.commons.yml
   - ../vars.vms.yml
 
-  vars:
-  - pool_id: "dev1"
 
   tasks:
     # - name: Stop existing VMs
@@ -34,7 +32,7 @@
         state: absent
       loop: "{{ vm_definitions }}"
 
-    - name: Clone a VM from the template
+    - name: Clone VM from cloud init templates
       community.general.proxmox_kvm:
         api_host: "{{ proxmox_host }}"
         api_user: "{{ proxmox_api_user }}"
@@ -42,15 +40,20 @@
         api_token_secret: "{{ proxmox_api_secret }}"
         validate_certs: false
         node: "{{ item.node }}"
-        name: "{{ item.vm_name }}.{{ pool_id }}.bazaar.com"
+        name: "{{ item.vm_name }}.{{ item.pool_id }}.bazaar.com"
         clone: "{{ item.template_name }}"
         newid: "{{ item.vm_id }}"
-        pool: "{{ pool_id }}"
-        memory: "{{ item.memory }}"  # Increase the memory (in MB)
-        cores: "{{ item.cores }}"  # Increase the CPU cores
+        pool: "{{ item.pool_id }}"
         full: true
         state: present
       register: clone_result
+      loop: "{{ vm_definitions }}"
+
+    - name: Set VM Resources
+      ansible.builtin.shell: |
+        qm set {{ item.vm_id }} --memory {{ item.memory  }} --cores {{ item.cores }}
+      args:
+        executable: /bin/bash
       loop: "{{ vm_definitions }}"
 
     # - name: Generate SHA-512 hashed password
@@ -61,7 +64,7 @@
       ansible.builtin.template:
         src: "cloudinit/{{ user_data_file }}"
         remote_src: false
-        dest: "{{ proxmox_storage_path }}/snippets/{{ pool_id }}-{{ item.vm_id }}-cloud-init-user-data.yaml"
+        dest: "{{ proxmox_storage_path }}/snippets/{{ item.pool_id }}-{{ item.vm_id }}-cloud-init-user-data.yaml"
         owner: root
         group: root
         mode: '0644'
@@ -69,7 +72,7 @@
     
     - name: Attach user-data to VM
       ansible.builtin.shell: |
-        qm set {{ item.vm_id }} --cicustom "user={{ proxmox_storage }}:snippets/{{ pool_id }}-{{ item.vm_id }}-cloud-init-user-data.yaml" --ipconfig0 ip={{ item.ip_address }}/24,gw={{ gateway_ip_address }}
+        qm set {{ item.vm_id }} --cicustom "user={{ proxmox_storage }}:snippets/{{ item.pool_id }}-{{ item.vm_id }}-cloud-init-user-data.yaml" --ipconfig0 ip={{ item.ip_address }}/24,gw={{ gateway_ip_address }}
       args:
         executable: /bin/bash
       register: attach_user_data
