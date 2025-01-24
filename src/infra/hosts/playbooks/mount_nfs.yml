@@ -1,0 +1,19 @@
+- name: Create NFS Mounts
+  hosts: bazaar-1
+  become: true
+  vars_files:
+  - ../vars.secrets.yml
+  - ../vars.commons.yml
+
+  tasks:
+    - name: Install NFS client on Proxmox nodes
+      apt:
+        name: nfs-common
+        state: present
+
+    - name: Add NFS storage to Proxmox
+      command: >
+        pvesh create /storage --storage nfs_storage --type nfs
+        --server {{ nfs_server }}
+        --export {{ nfs_host_directory }}
+        --content images,iso,snippets

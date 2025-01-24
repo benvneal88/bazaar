@@ -1,3 +1,3 @@
 # bazaar
 
-A declarative repo for managing a small cluster with Nomad
+A declarative repo for maintaining services running on a mimilab cluster with Terraform, Ansible, and Nomad with Proxmox VE.

@@ -30,11 +30,11 @@ Congiure hosts file at `src/infra/hosts/inventory_nodes.yml`
 
 Verify hosts are running:
 
-    ansible -i src/infra/hosts/inventory_nodes.yml all -m ping
+    ansible -i src/infra/hosts/inventory.yml all -m ping
 
-Restart hosts if needed:
+Restart nodes if needed:
 
-    ansible all -i src/infra/hosts/inventory_nodes.yml -b -m reboot --become
+    ansible all -i src/infra/hosts/inventory.yml -b -m reboot --become --limit "nodes"
 
 
 ## Manage Nodes
@@ -53,11 +53,16 @@ Once the Nodes are configured with PVE and added to the cluster create the VMs:
 # Create API Token for Ansible User
     ansible-playbook -i src/infra/hosts/inventory_nodes.yml src/infra/hosts/playbooks/create_api_token.yml
 
+# Create NFS Mount
+
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/mount_nfs.yml --limit "nodes"
+
 # Create Cloud Init Template
     ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_templates.yml --limit "templates"
 
 # Create VM from Template
     ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_clones.yml --limit "nodes"
+
 
 # SSH into VMs
     ssh -i src/infra/hosts/init/keys/vm_key ansible@<vm_ip_address>
