@@ -41,7 +41,7 @@
 
     - name: Install Proxmox VE packages
       apt:
-        name: ['proxmox-ve', 'postfix', 'open-iscsi' ,'chrony']
+        name: ['proxmox-ve', 'postfix', 'open-iscsi' ,'chrony', 'python3-proxmoxer']
         state: present
 
     - name: Remove Debian kernel

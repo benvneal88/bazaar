@@ -55,17 +55,20 @@ Once the Nodes are configured with PVE and added to the cluster create the VMs:
 
 # Create NFS Mount
 
-    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/mount_nfs.yml --limit "nodes"
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/mount_nfs.yml
 
 # Create Cloud Init Template
-    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_templates.yml --limit "templates"
+    ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_templates.yml
 
 # Create VM from Template
     ansible-playbook -i src/infra/hosts/inventory.yml src/infra/hosts/playbooks/create_vm_clones.yml --limit "nodes"
 
-
 # SSH into VMs
-    ssh -i src/infra/hosts/init/keys/vm_key ansible@<vm_ip_address>
+    ssh -i src/infra/hosts/init/keys/vm_key -o StrictHostKeyChecking=no ansible@<vm_ip_address>
+
+    ssh -i src/infra/hosts/init/keys/vm_key -o StrictHostKeyChecking=no ansible@192.168.1.10
+    ssh -i src/infra/hosts/init/keys/vm_key -o StrictHostKeyChecking=no ansible@192.168.1.12
+    
 
 
 

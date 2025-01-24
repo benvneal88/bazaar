@@ -10,7 +10,7 @@ ssh_pwauth: false               # Enables SSH password authentication
 disable_root: false             # Ensures root login is not disabled
 chpasswd:                       # Handles plain-text password authentication
   expire: false                 # Prevents the password from expiring
-hostname: {{ item.vm_name }}.{{ item.pool_id }}.bazaar.com # Sets the hostname for the VM
+hostname: "{{ item.vm_name_prefix }}{{ item.node_id }}{{ item.vm_id_suffix }}.{{ item.pool_id }}.bazaar.com" # Sets the hostname for the VM
 packages:
   - qemu-guest-agent
 package_update: true            # Runs an `apt-get update`

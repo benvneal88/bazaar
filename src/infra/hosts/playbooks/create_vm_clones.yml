@@ -1,11 +1,10 @@
 - name: Clone VM from Cloud-Init Template
-  hosts: bazaar-1
+  hosts: all
   become: true
   vars_files:
   - ../vars.secrets.yml
   - ../vars.commons.yml
   - ../vars.vms.yml
-
 
   tasks:
     # - name: Stop existing VMs
@@ -27,9 +26,10 @@
         api_token_id: "{{ proxmox_api_token_id }}"
         api_token_secret: "{{ proxmox_api_secret }}"
         validate_certs: false
-        node: "{{ item.node }}"
-        vmid: "{{ item.vm_id }}"
+        node: "bazaar-{{ item.node_id }}"
+        vmid: "{{ item.node_id }}{{ item.vm_id_suffix }}"
         state: absent
+      when: "'bazaar-' ~ item.node_id == inventory_hostname"
       loop: "{{ vm_definitions }}"
 
     - name: Clone VM from cloud init templates
@@ -39,21 +39,24 @@
         api_token_id: "{{ proxmox_api_token_id }}"
         api_token_secret: "{{ proxmox_api_secret }}"
         validate_certs: false
-        node: "{{ item.node }}"
-        name: "{{ item.vm_name }}.{{ item.pool_id }}.bazaar.com"
-        clone: "{{ item.template_name }}"
-        newid: "{{ item.vm_id }}"
+        node: "bazaar-{{ item.node_id }}"
+        name: "{{ item.vm_name_prefix }}{{ item.node_id }}{{ item.vm_id_suffix }}.{{ item.pool_id }}.bazaar.com"
+        clone: "{{ item.template_name }}.b{{ item.node_id }}"
+        newid: "{{ item.node_id }}{{ item.vm_id_suffix }}"
         pool: "{{ item.pool_id }}"
         full: true
         state: present
       register: clone_result
+      when: "'bazaar-' ~ item.node_id == inventory_hostname"
       loop: "{{ vm_definitions }}"
+      
 
     - name: Set VM Resources
       ansible.builtin.shell: |
-        qm set {{ item.vm_id }} --memory {{ item.memory  }} --cores {{ item.cores }}
+        qm set {{ item.node_id }}{{ item.vm_id_suffix }} --memory {{ item.memory }} --cores {{ item.cores }}
       args:
         executable: /bin/bash
+      when: "'bazaar-' ~ item.node_id == inventory_hostname"
       loop: "{{ vm_definitions }}"
 
     # - name: Generate SHA-512 hashed password
@@ -64,28 +67,31 @@
       ansible.builtin.template:
         src: "cloudinit/{{ user_data_file }}"
         remote_src: false
-        dest: "{{ proxmox_storage_path }}/snippets/{{ item.pool_id }}-{{ item.vm_id }}-cloud-init-user-data.yaml"
+        dest: "{{ proxmox_storage_path }}/snippets/{{ item.pool_id }}-{{ item.node_id }}{{ item.vm_id_suffix }}-cloud-init-user-data.yaml"
         owner: root
         group: root
         mode: '0644'
+      when: "'bazaar-' ~ item.node_id == inventory_hostname"
       loop: "{{ vm_definitions }}"
     
     - name: Attach user-data to VM
       ansible.builtin.shell: |
-        qm set {{ item.vm_id }} --cicustom "user={{ proxmox_storage }}:snippets/{{ item.pool_id }}-{{ item.vm_id }}-cloud-init-user-data.yaml" --ipconfig0 ip={{ item.ip_address }}/24,gw={{ gateway_ip_address }}
+        qm set {{ item.node_id }}{{ item.vm_id_suffix }} --cicustom "user={{ proxmox_storage }}:snippets/{{ item.pool_id }}-{{ item.node_id }}{{ item.vm_id_suffix }}-cloud-init-user-data.yaml" --ipconfig0 ip={{ item.ip_address }}/24,gw={{ gateway_ip_address }}
       args:
         executable: /bin/bash
       register: attach_user_data
       changed_when: attach_user_data.rc == 0
       failed_when: attach_user_data.rc not in [0]
+      when: "'bazaar-' ~ item.node_id == inventory_hostname"
       loop: "{{ vm_definitions }}"
 
     - name: Regenerate cloudinit disk
       ansible.builtin.shell: |
-        qm cloudinit update {{ item.vm_id }}
+        qm cloudinit update {{ item.node_id }}{{ item.vm_id_suffix }}
       args:
         executable: /bin/bash
       register: regenerate_cloud_init
       changed_when: regenerate_cloud_init.rc == 0
       failed_when: regenerate_cloud_init.rc not in [0]
+      when: "'bazaar-' ~ item.node_id == inventory_hostname"
       loop: "{{ vm_definitions }}"
