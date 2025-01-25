@@ -3,6 +3,7 @@ users:
   - name: {{ proxmox_ci_user }} # Username to create
     lock_passwd: false          # Unlocks the account
     groups: sudo                # Adds the user to the sudo group
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
     shell: /bin/bash            # Default shell for the user
     ssh_authorized_keys:        # SSH public key for key-based authentication
       - {{ sshkey }}

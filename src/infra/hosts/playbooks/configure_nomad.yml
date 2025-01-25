@@ -1,0 +1,80 @@
+- name: Install and configure Nomad
+  hosts: nomad_hosts  # Group of hosts for Nomad
+  become: true  # Execute tasks as root
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - curl
+          - unzip
+        state: present
+        update_cache: true
+
+    - name: Download Nomad binary
+      get_url:
+        url: "https://releases.hashicorp.com/nomad/1.9.5/nomad_1.9.5_linux_amd64.zip"
+        dest: "/tmp/nomad.zip"
+
+    - name: Unzip Nomad binary
+      unarchive:
+        src: "/tmp/nomad.zip"
+        dest: "/usr/local/bin"
+        remote_src: true
+
+    - name: Create Nomad system user
+      user:
+        name: nomad
+        create_home: no
+        shell: /bin/false
+
+    - name: Create Nomad directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /etc/nomad
+        - /opt/nomad
+
+    - name: Create Nomad configuration file
+      copy:
+        dest: /etc/nomad/nomad.hcl
+        content: |
+          # Nomad configuration file
+          data_dir = "/opt/nomad"
+          bind_addr = "0.0.0.0"
+          advertise {
+            http = "{{ ansible_host }}:4646"
+            rpc  = "{{ ansible_host }}:4647"
+            serf = "{{ ansible_host }}:4648"
+          }
+          server {
+            enabled = true
+            bootstrap_expect = 3
+          }
+          client {
+            enabled = true
+          }
+
+    - name: Create Nomad systemd service
+      copy:
+        dest: /etc/systemd/system/nomad.service
+        content: |
+          [Unit]
+          Description=Nomad
+          After=network.target
+
+          [Service]
+          User=nomad
+          ExecStart=/usr/local/bin/nomad agent -config /etc/nomad/nomad.hcl
+          Restart=on-failure
+          LimitNOFILE=65536
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable and start Nomad service
+      systemd:
+        name: nomad
+        enabled: true
+        state: started

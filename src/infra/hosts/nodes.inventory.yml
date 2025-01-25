@@ -15,15 +15,3 @@ all:
         bazaar-3:
           ansible_host: 192.168.1.151
           node_id: 3
-    # vms:
-    #   hosts:
-    #     vm10:
-    #       ansible_host: 192.168.1.10
-    #     vm20:
-    #       ansible_host: 192.168.1.20
-    #     vm21:
-    #       ansible_host: 192.168.1.21
-    #     vm30:
-    #       ansible_host: 192.168.1.30
-    #     vm31:
-    #       ansible_host: 192.168.1.31 

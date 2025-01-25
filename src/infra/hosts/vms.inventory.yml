@@ -1,0 +1,27 @@
+all:
+  vars:
+    ansible_user: admin
+    ansible_ssh_private_key_file: ~/.ssh/vm_key
+    ansible_ssh_common_args: -o StrictHostKeyChecking=no
+
+  children:
+    nomad_hosts:
+      hosts:
+        vm110:
+          ansible_host: 192.168.1.10
+        vm221:
+          ansible_host: 192.168.1.21
+        # vm222:
+        #   ansible_host: 192.168.1.22
+        # vm331:
+        #   ansible_host: 192.168.1.31
+        # vm332:
+        #   ansible_host: 192.168.1.32
+    vault_hosts:
+      hosts:
+        vm110:
+          ansible_host: 192.168.1.10
+    consul_hosts:
+      hosts:
+        vm110:
+          ansible_host: 192.168.1.10       
