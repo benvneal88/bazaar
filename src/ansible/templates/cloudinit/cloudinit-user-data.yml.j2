@@ -1,0 +1,23 @@
+#cloud-config
+users:
+  - name: {{ proxmox_ci_user }} # Username to create
+    lock_passwd: false          # Unlocks the account
+    groups: sudo                # Adds the user to the sudo group
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    shell: /bin/bash            # Default shell for the user
+    ssh_authorized_keys:        # SSH public key for key-based authentication
+      - {{ sshkey }}
+ssh_pwauth: false               # Enables SSH password authentication
+disable_root: false             # Ensures root login is not disabled
+chpasswd:                       # Handles plain-text password authentication
+  expire: false                 # Prevents the password from expiring
+hostname: "{{ item.vm_name }}.{{ item.pool_id }}.bazaar.com" # Sets the hostname for the VM
+packages:
+  - qemu-guest-agent
+package_update: true            # Runs an `apt-get update`
+package_upgrade: true           # Runs an `apt-get upgrade`
+runcmd:
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, qemu-guest-agent.service ]
+  - [ systemctl, start, --no-block, qemu-guest-agent.service ]
+  

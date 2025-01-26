@@ -1,0 +1,10 @@
+cluster_name: bazaar-prod
+first_node_ip: 192.168.1.195  # Replace with the IP of your first node
+static_ip_config:
+  # ls /sys/class/net
+  interface_name: enp2s0 
+  gateway: 192.168.1.1
+  netmask: 255.255.255.0
+  dns: 8.8.8.8
+QEMU_AGENT: true # Set this to false if you prefer not to use the QEMU agent.
+UEFI: true # Set this to false if you would rather use a non-UEFI image.

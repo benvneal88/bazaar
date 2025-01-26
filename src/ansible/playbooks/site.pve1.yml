@@ -1,0 +1,11 @@
+---
+- name: Configure Proxmox Virtual Environment
+  hosts: pve_nodes
+  become: yes
+
+  tasks:
+    - name: Configure Networking
+      include_tasks: ../tasks/configure_networking.yml
+
+    - name: Configure PVE Cluster
+      include_tasks: ../tasks/configure_proxmox_cluster.yml

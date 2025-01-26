@@ -1,0 +1,122 @@
+---
+- name: Check if the template already exists
+  ansible.builtin.stat:
+    path: "{{ template_shared_storage_path }}/{{ item.cloud_image_name }}"
+  register: cloud_image_file_stat
+  become: true
+  loop: "{{ template_defintions }}"
+
+- name: Download the cloud image
+  ansible.builtin.get_url:
+    url: "{{ item.item.cloud_image_url_base }}{{ item.item.cloud_image_name }}"
+    dest: "{{ template_shared_storage_path }}/{{ item.item.cloud_image_name }}"
+    owner: root
+    group: root
+    mode: '0644'
+    timeout: 60
+  when: not item.stat.exists
+  loop: "{{ cloud_image_file_stat.results }}"
+
+- name: Remove existing cloud image
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_secret }}"
+    vmid: "{{ node_id }}{{ item.template_id_suffix }}"
+    state: absent
+  loop: "{{ template_defintions }}"
+
+# - name: Debug the file_stat output
+#   ansible.builtin.debug:
+#     var: hostvars
+
+- name: Create VM template
+  ansible.builtin.shell: "qm create {{ node_id }}{{ item.template_id_suffix }} --name {{ item.template_name }}.b{{ node_id }} --core {{ item.cores }} --memory {{ item.memory }} --net0 virtio,bridge=vmbr0"
+  args:
+    executable: /bin/bash
+  register: create_vm
+  changed_when: create_vm.rc == 0
+  failed_when: create_vm.rc not in [0]
+  loop: "{{ template_defintions }}"
+
+- name: Create a directory for the template image
+  ansible.builtin.file:
+    path: "{{ proxmox_storage }}/images/{{ node_id }}{{ item.template_id_suffix }}/"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ template_defintions }}"
+
+- name: Import the disk to Proxmox
+  ansible.builtin.shell: |
+    qm importdisk {{ node_id }}{{ item.template_id_suffix }} {{ template_shared_storage_path }}/{{ item.cloud_image_name }} {{ proxmox_storage }} --format qcow2
+  args:
+    executable: /bin/bash
+  register: import_disk
+  changed_when: import_disk.rc == 0
+  failed_when: import_disk.rc not in [0]
+  loop: "{{ template_defintions }}"
+
+- name: Attach the disk to the VM
+  ansible.builtin.shell: |
+    qm set {{ node_id }}{{ item.template_id_suffix }} --scsihw virtio-scsi-pci --scsi0 {{ proxmox_storage }}:0,import-from={{ template_shared_storage_path }}/{{ item.cloud_image_name }},format=qcow2
+  args:
+    executable: /bin/bash
+  register: attach_disk
+  changed_when: attach_disk.rc == 0
+  failed_when: attach_disk.rc not in [0]
+  loop: "{{ template_defintions }}"
+
+- name: Configure add Cloud-Init drive, set serial console, boot order, and network to dhcp
+  ansible.builtin.shell: |
+    qm set {{ node_id }}{{ item.template_id_suffix }} --ide2 {{ proxmox_storage }}:cloudinit --boot 'order=scsi0;ide2' --serial0 socket --vga serial0 --citype {{ item.citype }} 
+  args:
+    executable: /bin/bash
+  register: cloud_init
+  changed_when: cloud_init.rc == 0
+  failed_when: cloud_init.rc not in [0]
+  loop: "{{ template_defintions }}"
+
+- name: Enable QEMU Agent
+  ansible.builtin.shell: |
+    qm set {{ node_id }}{{ item.template_id_suffix }} --agent 1
+  args:
+    executable: /bin/bash
+  when: QEMU_AGENT
+  register: enable_qemu_agent
+  changed_when: enable_qemu_agent.rc == 0
+  failed_when: enable_qemu_agent.rc not in [0]
+  loop: "{{ template_defintions }}"
+
+- name: Resize disk
+  ansible.builtin.shell: |
+    qm resize {{ node_id }}{{ item.template_id_suffix }} scsi0 {{ item.disk_size }}G
+  args:
+    executable: /bin/bash
+  register: resize_disk
+  changed_when: resize_disk.rc == 0
+  failed_when: resize_disk.rc not in [0]
+  loop: "{{ template_defintions }}"
+
+- name: Enable UEFI
+  ansible.builtin.shell: |
+    qm set {{ node_id }}{{ item.template_id_suffix }} --machine q35 --efidisk0 {{ proxmox_storage }}:1,format=qcow2
+  args:
+    executable: /bin/bash
+  when: UEFI
+  register: enable_uefi
+  changed_when: enable_uefi.rc == 0
+  failed_when: enable_uefi.rc not in [0]
+  loop: "{{ template_defintions }}"
+
+- name: Convert VM to template
+  ansible.builtin.shell: |
+    qm template {{ node_id }}{{ item.template_id_suffix }}
+  args:
+    executable: /bin/bash
+  register: convert_template
+  changed_when: convert_template.rc == 0
+  failed_when: convert_template.rc not in [0]
+  loop: "{{ template_defintions }}"

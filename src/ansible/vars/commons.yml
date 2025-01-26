@@ -1,0 +1,11 @@
+proxmox_storage: "local"
+proxmox_storage_path: "/var/lib/vz"
+proxmox_shared_storage: "nfs_storage"
+proxmox_shared_storage_path: "/mnt/pve/nfs_storage"
+template_shared_storage_path: "/mnt/pve/nfs_storage/images"
+node_target: "bazaar-1"
+gateway_ip_address: "192.168.1.1"
+user_data_file: "cloudinit-user-data.yml.j2"
+nfs_host_directory: /bazaar_storage
+nfs_server: 192.168.1.225
+vm_public_key_file: "/root/.ssh/vm_key.pub"

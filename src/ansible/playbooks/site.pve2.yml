@@ -1,0 +1,17 @@
+---
+- name: Configure Proxmox Virtual Environment
+  hosts: pve_nodes
+  vars_files:
+  - ../vars/vm_templates.yml
+  - ../vars/secrets.yml
+  - ../vars/commons.yml
+
+  tasks:
+    - name: Create Proxmox API token with root password
+      include_tasks: ../tasks/create_api_token.yml
+
+    - name: Create NFS Storage Type from NAS
+      include_tasks: ../tasks/create_shared_storage.yml
+
+    - name: Create VM Templates
+      include_tasks: tasks/create_vm_templates.yml

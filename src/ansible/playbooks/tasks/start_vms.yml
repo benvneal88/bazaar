@@ -1,0 +1,14 @@
+---
+- name: Start VMs
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_secret }}"
+    validate_certs: false
+    node: "bazaar-{{ item.node_id }}"
+    vmid: "{{ item.vm_id }}"
+    state: started
+  when: "'bazaar-' ~ item.node_id == inventory_hostname"
+  ignore_errors: yes
+  loop: "{{ vm_definitions }}"

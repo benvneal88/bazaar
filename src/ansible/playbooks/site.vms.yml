@@ -1,0 +1,18 @@
+---
+- name: Create VMs
+  hosts: pve_nodes
+  vars_files:
+  - ../vars/secrets.yml
+  - ../vars/commons.yml
+  - ../vars/vm_definitions.yml
+
+  tasks:
+    # move stop and start to a dedicated playbook with the nomad_hosts group
+    # - name: Stop VMs
+    #   include_tasks: tasks/stop_vms.yml
+
+    - name: Create VMs
+      include_tasks: tasks/create_vms.yml
+
+    - name: Start VMs
+      include_tasks: tasks/start_vms.yml
