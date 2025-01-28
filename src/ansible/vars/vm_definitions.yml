@@ -1,31 +1,56 @@
+server_defaults: &server_defaults
+  memory: 4000
+  cores: 2
+  disk_size: 50
+  template_name: "cloudinit-template.debian-12-bookworm"
+  pool_id: "dev1"
+
+client_defaults: &client_defaults
+  memory: 10000
+  cores: 2
+  disk_size: 100
+  template_name: "cloudinit-template.debian-12-bookworm"
+  pool_id: "dev1"
+
 vm_definitions:
   - vm_name: "nomad-110"
     vm_id: "110"
     node_id: "1"
     ip_address: 192.168.1.10
-    description: "Nomad VM on bazaar-1"
-    memory: 15000
-    cores: 4
-    disk_size: 50
-    template_name: "cloudinit-template.debian-12-bookworm"
-    pool_id: "dev1"
-  - vm_name: "nomad-221"
-    vm_id: "221"
+    description: "Nomad Server on bazaar-1"
+    <<: *server_defaults
+
+  - vm_name: "nomad-113"
+    vm_id: "113"
+    node_id: "1"
+    ip_address: 192.168.1.13
+    description: "Nomad Client on bazaar-1"
+    <<: *client_defaults
+
+  - vm_name: "nomad-220"
+    vm_id: "220"
     node_id: "2"
-    ip_address: 192.168.1.21
-    description: "Nomad VM on bazaar-2"
-    memory: 15000
-    cores: 4
-    disk_size: 50
-    template_name: "cloudinit-template.debian-12-bookworm"
-    pool_id: "dev1"
-  - vm_name: "nomad-331"
-    vm_id: "331"
+    ip_address: 192.168.1.20
+    description: "Nomad Server on bazaar-2"
+    <<: *server_defaults
+
+  - vm_name: "nomad-222"
+    vm_id: "222"
+    node_id: "2"
+    ip_address: 192.168.1.22
+    description: "Nomad Client on bazaar-2"
+    <<: *client_defaults
+
+  - vm_name: "nomad-330"
+    vm_id: "330"
     node_id: "3"
-    ip_address: 192.168.1.31
-    description: "Nomad VM on bazaar-3"
-    memory: 15000
-    cores: 4
-    disk_size: 50
-    template_name: "cloudinit-template.debian-12-bookworm"
-    pool_id: "dev1"
+    ip_address: 192.168.1.30
+    description: "Nomad Server VM on bazaar-3"
+    <<: *server_defaults
+
+  - vm_name: "nomad-332"
+    vm_id: "332"
+    node_id: "3"
+    ip_address: 192.168.1.32
+    description: "Nomad Client on bazaar-3"
+    <<: *client_defaults

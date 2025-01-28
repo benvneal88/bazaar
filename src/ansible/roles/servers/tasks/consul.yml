@@ -1,0 +1,72 @@
+---
+- name: Install and configure Consul
+  hosts: servers  # Group of hosts for Consul
+  become: true
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - curl
+          - unzip
+        state: present
+        update_cache: true
+
+    - name: Download Consul binary
+      get_url:
+        url: "https://releases.hashicorp.com/consul/1.12.1/consul_1.12.1_linux_amd64.zip"
+        dest: "/tmp/consul.zip"
+
+    - name: Unzip Consul binary
+      unarchive:
+        src: "/tmp/consul.zip"
+        dest: "/usr/local/bin"
+        remote_src: true
+
+    - name: Create Consul system user
+      user:
+        name: consul
+        create_home: no
+        shell: /bin/false
+
+    - name: Create Consul directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /etc/consul.d
+        - /opt/consul
+
+    - name: Create Consul configuration file
+      copy:
+        dest: /etc/consul.d/consul.hcl
+        content: |
+          # Consul configuration file
+          data_dir = "/opt/consul"
+          bind_addr = "0.0.0.0"
+          server = true
+          bootstrap_expect = 3
+          advertise_addr = "{{ ansible_host }}"
+          retry_join = ["provider=aws tag_key=consul cluster_name=prod"]
+
+    - name: Create Consul systemd service
+      copy:
+        dest: /etc/systemd/system/consul.service
+        content: |
+          [Unit]
+          Description=Consul
+          After=network.target
+
+          [Service]
+          User=consul
+          ExecStart=/usr/local/bin/consul agent -config-dir /etc/consul.d
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable and start Consul service
+      systemd:
+        name: consul
+        enabled: true
+        state: started

@@ -43,7 +43,7 @@ Reboot PVE nodes if needed:
 
 Run the ansible playbooks to install Proxmox VE on a new debian image.
 
-    ansible-playbook -i inventory/dev/hosts.yml playbooks/site.pve1.yml
+    ansible-playbook -i inventory/dev/hosts.yml playbooks/deploy.pve_step1.yml
 
 Some manual steps are need to add a new node to the Proxmox VE cluster
 
@@ -54,18 +54,25 @@ Some manual steps are need to add a new node to the Proxmox VE cluster
 
 Once the Nodes are configured with PVE and added to the cluster create the VMs:
 
-    ansible-playbook -i inventory/dev/hosts.yml playbooks/site.pve2.yml
+    ansible-playbook -i inventory/dev/hosts.yml playbooks/deploy.pve_step2.yml
+    ansible-playbook -i inventory/dev/hosts.yml playbooks/deploy.vms.yml
+
+# Start and Stop VMs
+
+    ansible-playbook -i inventory/dev/hosts.yml playbooks/start.vms.yml
+    ansible-playbook -i inventory/dev/hosts.yml playbooks/stop.vms.yml
 
 # SSH into VMs
-    ssh -i src/infra/hosts/init/keys/vm_key -o StrictHostKeyChecking=no admin@<vm_ip_address>
+    ssh -i src/init/keys/vm_key -o StrictHostKeyChecking=no admin@<vm_ip_address>
 
-    ssh -i src/infra/hosts/init/keys/vm_key -o StrictHostKeyChecking=no admin@192.168.1.10
-    ssh -i src/infra/hosts/init/keys/vm_key -o StrictHostKeyChecking=no admin@192.168.1.21
+    ssh -i src/init/keys/vm_key -o StrictHostKeyChecking=no admin@192.168.1.10
+    ssh -i src/init/keys/vm_key  admin@192.168.1.22 -o StrictHostKeyChecking=no
     
+    ansible -i inventory/dev/hosts.yml vms -m ping
+
 # Setup Nomad, Consul and Vault
 
-    ansible-playbook -i inventory/dev/hosts.yml src/infra/hosts/playbooks/configure_nomad.yml --limit nomad_hosts
-
+    ansible-playbook -i inventory/dev/hosts.yml playbooks/deploy.hashicorp.yml
 
 <!-- 
 

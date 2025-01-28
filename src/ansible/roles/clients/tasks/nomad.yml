@@ -1,0 +1,47 @@
+---
+- name: Generate Nomad client configuration
+  copy:
+    dest: /etc/nomad/nomad.hcl
+    owner: nomad
+    group: nomad
+    mode: "0644"
+    content: |
+      # Nomad client configuration
+      data_dir = "/opt/nomad"
+      bind_addr = "0.0.0.0"
+
+      client {
+        enabled = true
+        servers = ["nomad-110:4647", "nomad-220:4647", "nomad-330:4647"]
+      }
+
+- name: Create Nomad systemd service
+  copy:
+    dest: /etc/systemd/system/nomad.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Nomad Client Agent
+      After=network.target
+
+      [Service]
+      User=nomad
+      Group=nomad
+      ExecStart=/usr/local/bin/nomad agent -config=/etc/nomad/nomad.hcl
+      Restart=on-failure
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd to apply changes
+  systemd:
+    daemon_reload: true
+
+- name: Enable and start Nomad service
+  systemd:
+    name: nomad
+    enabled: true
+    state: started

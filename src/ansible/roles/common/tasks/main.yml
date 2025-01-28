@@ -1,0 +1,62 @@
+---
+# - name: Create user
+#   user:
+#     name: "{{ common_user }}"
+#     shell: /bin/bash
+#     groups: sudo
+#     append: true
+#     create_home: true
+#     # password: "{{ password | password_hash('sha512') }}"
+#     # update_password: on_create
+#     state: present
+
+# - name: Force reset password on first login
+#   command: "chage -d 0 {{ common_user }}"
+
+# - name: Set timezone
+#   community.general.timezone:
+#     name: "{{ common_timezone }}"
+
+- name: Update apt packages
+  apt:
+    update_cache: true
+    cache_valid_time: 86400
+    upgrade: true
+
+# - name: Wait for dpkg lock to be released
+#   shell: while lsof /var/lib/dpkg/lock-frontend ; do sleep 10 ; done;
+#   changed_when: false
+
+# - name: Update and install packages
+#   apt:
+#     name: "{{ item }}"
+#     state: present
+#   with_items: "{{ common_packages }}"
+  
+- import_tasks: hashicorp.yml
+
+# - name: Install Bitwarden CLI
+#   unarchive:
+#     src: "https://vault.bitwarden.com/download/?app=cli&platform={{ ansible_system|lower }}"
+#     dest: "/usr/bin"
+#     remote_src: true
+#     mode: 0755
+#     owner: root
+#     group: root
+#   tags: bw
+
+# - name: Create NFS share directories
+#   file:
+#     path: "{{ common_nfs_dir }}"
+#     mode: 0755
+#     owner: "{{ common_user }}"
+#     group: "{{ common_user }}"
+#     state: directory
+#   tags: nfs
+
+- name: Limit journalctl size
+  lineinfile:
+    path: "/etc/systemd/journald.conf"
+    regexp: "^SystemMaxUse="
+    line: "SystemMaxUse=100M"
+

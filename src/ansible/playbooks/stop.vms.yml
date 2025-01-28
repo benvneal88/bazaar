@@ -1,0 +1,10 @@
+---
+- name: Start VMs
+  hosts: pve_nodes
+  become: true
+  vars_files:
+  - ../vars/secrets.yml
+  - ../vars/vm_definitions.yml
+  tasks:
+    - name: Stop VMs
+      include_tasks: tasks/stop_vms.yml 

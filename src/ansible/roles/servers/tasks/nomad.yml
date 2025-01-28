@@ -1,0 +1,57 @@
+
+---
+- name: Create Nomad configuration file
+  copy:
+    dest: /etc/nomad/nomad.hcl
+    owner: nomad
+    group: nomad
+    mode: "0644"
+    content: |
+      # Nomad configuration file
+      data_dir = "/opt/nomad"
+      bind_addr = "0.0.0.0"
+      advertise {
+        http = "{{ ansible_host }}:4646"
+        rpc  = "{{ ansible_host }}:4647"
+        serf = "{{ ansible_host }}:4648"
+      }
+      server {
+        enabled = true
+        bootstrap_expect = 3
+      }
+      client {
+        enabled = false
+      }
+      ui {
+        enabled = true
+      }
+
+- name: Create Nomad systemd service
+  copy:
+    dest: /etc/systemd/system/nomad.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Nomad
+      After=network.target
+
+      [Service]
+      User=nomad
+      ExecStart=/usr/local/bin/nomad agent -config /etc/nomad/nomad.hcl
+      Restart=on-failure
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd to apply changes
+  systemd:
+    daemon_reload: true
+    
+- name: Enable and start Nomad service
+  systemd:
+    name: nomad
+    enabled: true
+    state: started

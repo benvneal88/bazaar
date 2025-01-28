@@ -1,0 +1,11 @@
+---
+- name: Create VMs
+  hosts: pve_nodes
+  vars_files:
+  - ../vars/secrets.yml
+  - ../vars/commons.yml
+  - ../vars/vm_definitions.yml
+
+  tasks:
+    - name: Clone VMs from templates
+      include_tasks: tasks/create_vms.yml

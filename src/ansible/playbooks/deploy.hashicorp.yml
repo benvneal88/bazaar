@@ -1,0 +1,34 @@
+---
+- name: Start VMs
+  hosts: vms
+  become: true
+  vars_files:
+  - ../vars/secrets.yml
+  - ../vars/vm_definitions.yml
+  tasks:
+    - name: Start VMs
+      include_tasks: tasks/start_vms.yml  
+
+# - name: Deploy Hashicorp common software
+#   hosts: vms
+#   become: true
+#   vars_files:
+#   - ../vars/secrets.yml
+#   roles:
+#     - common
+
+- name: Deploy Nomad, Consul and Vault to servers
+  hosts: servers
+  become: true
+  vars_files:
+  - ../vars/secrets.yml
+  roles:
+    - servers
+
+# - name: Deploy Nomad Agent to clients
+#   hosts: clients
+#   become: true
+#   vars_files:
+#   - ../vars/secrets.yml
+#   roles:
+#     - clients
