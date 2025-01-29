@@ -1,0 +1,8 @@
+# Nomad client configuration
+data_dir = "/opt/nomad"
+bind_addr = "0.0.0.0"
+
+client {
+  enabled = true
+  servers = [{% for server in nomad_servers %}"{{ server }}:4647"{{ "," if not loop.last }}{% endfor %}]  
+}

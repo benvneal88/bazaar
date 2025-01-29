@@ -1,19 +1,11 @@
 ---
-- name: Generate Nomad client configuration
-  copy:
+- name: Create Nomad client configuration file
+  ansible.builtin.template:
+    src: nomad_client_config.hcl.j2
     dest: /etc/nomad/nomad.hcl
     owner: nomad
     group: nomad
-    mode: "0644"
-    content: |
-      # Nomad client configuration
-      data_dir = "/opt/nomad"
-      bind_addr = "0.0.0.0"
-
-      client {
-        enabled = true
-        servers = ["nomad-110:4647", "nomad-220:4647", "nomad-330:4647"]
-      }
+    mode: 0644
 
 - name: Create Nomad systemd service
   copy:
@@ -36,12 +28,9 @@
       [Install]
       WantedBy=multi-user.target
 
-- name: Reload systemd to apply changes
-  systemd:
-    daemon_reload: true
-
 - name: Enable and start Nomad service
-  systemd:
+  ansible.builtin.systemd:
     name: nomad
-    enabled: true
-    state: started
+    state: restarted
+    enabled: yes
+    daemon_reload: yes

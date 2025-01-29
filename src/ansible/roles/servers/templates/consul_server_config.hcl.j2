@@ -1,0 +1,14 @@
+# Consul configuration file
+# Enable Consul UI (Web UI)
+ui = true
+
+data_dir = "/opt/consul"
+
+# Optional: Configure the bind address for the HTTP API and UI (default is 0.0.0.0)
+# This allows the UI to be accessible on all network interfaces.
+bind_addr = "0.0.0.0"
+
+server = true
+bootstrap_expect = 3
+advertise_addr = "{{ ansible_host }}"
+retry_join = [{% for server in nomad_servers %}"{{ server }}"{{ "," if not loop.last }}{% endfor %}]

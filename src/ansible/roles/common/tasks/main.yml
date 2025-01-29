@@ -27,11 +27,11 @@
 #   shell: while lsof /var/lib/dpkg/lock-frontend ; do sleep 10 ; done;
 #   changed_when: false
 
-# - name: Update and install packages
-#   apt:
-#     name: "{{ item }}"
-#     state: present
-#   with_items: "{{ common_packages }}"
+- name: Update and install packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ common_packages }}"
   
 - import_tasks: hashicorp.yml
 
