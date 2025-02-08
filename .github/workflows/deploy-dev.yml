@@ -1,0 +1,22 @@
+name: Deploy Nomad Jobs
+on:
+  push:
+    branches:
+      - dev
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Nomad CLI
+        run: |
+          curl -fsSL https://releases.hashicorp.com/nomad/1.5.6/nomad_1.5.6_linux_amd64.zip -o nomad.zip
+          unzip nomad.zip && sudo mv nomad /usr/local/bin/
+
+      - name: Deploy Jobs
+        run: |
+          export NOMAD_ADDR=${{ secrets.NOMAD_ADDR }}
+          export NOMAD_TOKEN=${{ secrets.NOMAD_TOKEN }}
+          nomad job run nomad-jobs/services/web.nomad.hcl

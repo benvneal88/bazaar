@@ -3,7 +3,7 @@
 - name: Create Nomad configuration file
   ansible.builtin.template:
     src: nomad_server_config.hcl.j2
-    dest: /etc/nomad/nomad.hcl
+    dest: "{{ nomad_config_dir }}"/nomad.hcl
     owner: nomad
     group: nomad
     mode: 0644
@@ -27,7 +27,6 @@
 
       [Install]
       WantedBy=multi-user.target
-
 
 - name: Enable and start Nomad service
   ansible.builtin.systemd:

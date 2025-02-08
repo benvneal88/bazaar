@@ -1,3 +1,0 @@
----
-- import_tasks: nomad.yml
-- import_tasks: consul.yml

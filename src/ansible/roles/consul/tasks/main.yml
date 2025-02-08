@@ -1,13 +1,4 @@
 ---
-
-- name: Install dependencies
-  apt:
-    name:
-      - curl
-      - unzip
-    state: present
-    update_cache: true
-
 # - name: Download Consul binary
 #   get_url:
 #     url: "https://releases.hashicorp.com/consul/1.15.4/consul_1.15.4_linux_amd64.zip"
@@ -34,13 +25,29 @@
     mode: 0644
     mode: "0755"
   loop:
-    - /etc/consul.d
-    - /opt/consul
+    - "{{ consul_data_dir }}"
+    - "{{ consul_config_dir }}"
 
 - name: Create Consul configuration file
   ansible.builtin.template:
-    src: consul_server_config.hcl.j2
-    dest: /etc/consul.d/consul.hcl
+    src: consul_configuration.hcl.j2
+    dest: "{{ consul_config_dir }}/consul.hcl"
+    owner: consul
+    group: consul
+    mode: 0644
+
+- name: Create Consul server configuration file
+  ansible.builtin.template:
+    src: consul_server.hcl.j2
+    dest: "{{ consul_config_dir }}/server.hcl"
+    owner: consul
+    group: consul
+    mode: 0644
+
+- name: Create Consul server configuration file
+  ansible.builtin.template:
+    src: consul_client.hcl.j2
+    dest: "{{ consul_config_dir }}/client.hcl"
     owner: consul
     group: consul
     mode: 0644
@@ -65,4 +72,5 @@
   systemd:
     name: consul
     enabled: true
+    daemon_reload: true
     state: started

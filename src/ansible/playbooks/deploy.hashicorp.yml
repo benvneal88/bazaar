@@ -17,18 +17,37 @@
   roles:
     - common
 
-- name: Deploy Nomad, Consul and Vault to servers
+
+- name: Deploy Nomad
   hosts: servers
   become: true
   vars_files:
   - ../vars/secrets.yml
   roles:
-    - servers
+    # - name: Create root, intermediate CA for Vault
+    #   role: kencx.ansible_collection.ssl
+    #   become: true
+    #   run_once: true
+    - role: vault
+    - role: consul-template
+    - role: consul
+    - role: nomad
 
-- name: Deploy Nomad Agent to clients
+
+- name: Deploy client configuration
   hosts: clients
   become: true
   vars_files:
   - ../vars/secrets.yml
-  roles:
-    - clients
+    - role: vault
+      vars:
+        vault_server: false
+    - role: consul-template
+    - role: consul
+      vars:
+        consul_server: false
+        consul_client: true
+    - role: nomad
+      vars:
+        nomad_server: false
+        nomad_client: true
