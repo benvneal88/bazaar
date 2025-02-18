@@ -9,3 +9,7 @@ user_data_file: "cloudinit-user-data.yml.j2"
 nfs_host_directory: /bazaar_storage
 nfs_server: 192.168.1.225
 vm_public_key_file: "/root/.ssh/vm_key.pub"
+cert_dir: "/etc/docker/certs"
+registry_host: "manager-110"
+registry_ip: "192.168.1.10"
+registry_port: 5000

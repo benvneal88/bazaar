@@ -1,0 +1,26 @@
+- name: Copy stack directories on remote server
+  copy:
+    src: "{{ item.stack_name }}/"
+    dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/"
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ stacks }}"
+
+- name: Create Stack Docker Compose 
+  ansible.builtin.template:
+      src: "{{ item.stack_name }}/docker-compose.yml.j2"
+      remote_src: false
+      dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
+      owner: root
+      group: root
+      mode: '0744'
+  loop: "{{ stacks }}"
+
+- name: Deploy Docker Stack
+  community.docker.docker_stack:
+    state: present
+    name: "{{ item.stack_name }}"
+    compose: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
+  loop: "{{ stacks }}"
+

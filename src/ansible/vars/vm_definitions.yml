@@ -13,44 +13,44 @@ client_defaults: &client_defaults
   pool_id: "dev1"
 
 vm_definitions:
-  - vm_name: "nomad-110"
+  - vm_name: "manager-110"
     vm_id: "110"
     node_id: "1"
     ip_address: 192.168.1.10
-    description: "Nomad Server on bazaar-1"
+    description: "Docker Manager on bazaar-1"
     <<: *server_defaults
 
-  - vm_name: "nomad-113"
+  - vm_name: "worker-113"
     vm_id: "113"
     node_id: "1"
     ip_address: 192.168.1.13
-    description: "Nomad Client on bazaar-1"
+    description: "Docker Worker on bazaar-1"
     <<: *client_defaults
 
-  - vm_name: "nomad-220"
+  - vm_name: "manager-220"
     vm_id: "220"
     node_id: "2"
     ip_address: 192.168.1.20
-    description: "Nomad Server on bazaar-2"
+    description: "Docker Manager on bazaar-2"
     <<: *server_defaults
 
-  - vm_name: "nomad-222"
+  - vm_name: "worker-222"
     vm_id: "222"
     node_id: "2"
     ip_address: 192.168.1.22
-    description: "Nomad Client on bazaar-2"
+    description: "Docker Worker on bazaar-2"
     <<: *client_defaults
 
-  - vm_name: "nomad-330"
+  - vm_name: "manager-330"
     vm_id: "330"
     node_id: "3"
     ip_address: 192.168.1.30
-    description: "Nomad Server VM on bazaar-3"
+    description: "Docker Manager VM on bazaar-3"
     <<: *server_defaults
 
-  - vm_name: "nomad-332"
+  - vm_name: "worker-332"
     vm_id: "332"
     node_id: "3"
     ip_address: 192.168.1.32
-    description: "Nomad Client on bazaar-3"
+    description: "Docker Worker on bazaar-3"
     <<: *client_defaults

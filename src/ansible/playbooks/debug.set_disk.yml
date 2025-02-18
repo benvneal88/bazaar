@@ -1,0 +1,18 @@
+- name: Set disk size on VMs
+  hosts: pve_nodes
+  become: true
+  vars_files:
+  - ../vars/secrets.yml
+  - ../vars/vm_definitions.yml
+  tasks:
+  # - name: Resize disk
+  #   ansible.builtin.shell: |
+  #     qm resize {{ item.vm_id }} scsi0 15G
+  #   args:
+  #     executable: /bin/bash
+  #   when: "'bazaar-' ~ item.node_id == inventory_hostname"
+  #   loop: "{{ vm_definitions }}"
+  - name: Stop VMs
+    include_tasks: tasks/stop_vms.yml 
+  - name: Start VMs
+    include_tasks: tasks/start_vms.yml  

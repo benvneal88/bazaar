@@ -1,0 +1,36 @@
+---
+# - name: Start VMs
+#   hosts: pve_nodes
+#   become: true
+#   vars_files:
+#   - ../vars/secrets.yml
+#   - ../vars/vm_definitions.yml
+#   tasks:
+#     - name: Start VMs
+#       include_tasks: tasks/start_vms.yml  
+
+# - name: Deploy Docker common software
+#   hosts: vms
+#   become: true
+#   vars_files:
+#   - ../vars/secrets.yml
+#   roles:
+#     - common
+
+- name: Setup Managers
+  hosts: managers
+  become: true
+  vars_files:
+  - ../vars/secrets.yml
+  - ../vars/commons.yml
+  roles:
+    - role: managers
+
+# - name: Setup Workers 
+#   hosts: workers
+#   become: true
+#   vars_files:
+#   - ../vars/secrets.yml
+#   - ../vars/commons.yml
+#   roles:
+#     - role: workers

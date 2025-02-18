@@ -1,0 +1,3 @@
+registry_container_name: "registry"
+compose_dir: "/opt/docker_registry"
+san_dns: "registry.local"

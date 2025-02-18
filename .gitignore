@@ -2,3 +2,6 @@
 *secrets*
 *key*
 *tfstate*
+.*
+*.crt
+*.key

@@ -1,0 +1,28 @@
+---
+# - name: Get Swarm join-token for workers
+#   command: docker swarm join-token -q worker
+#   delegate_to: "{{ groups['managers'][0] }}"
+#   run_once: true
+#   register: worker_token
+
+# - name: Join workers to the swarm
+#   command: docker swarm join --token {{ worker_token.stdout }} {{ hostvars[groups['managers'][0]]['ansible_host'] }}:2377
+
+- name: Create certificate directory
+  file:
+    path: "{{ cert_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Copy registry certificate to swarm workers
+  copy:
+    src: "files/registry_ca.crt"
+    dest: "/etc/ssl/certs/registry_ca.crt"
+
+- name: Update CA certificates
+  command: update-ca-certificates
+
+- name: Restart Docker to Apply New Certificates
+  systemd:
+    name: docker
+    state: restarted

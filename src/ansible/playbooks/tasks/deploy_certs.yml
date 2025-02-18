@@ -1,0 +1,17 @@
+---
+
+- name: Ensure that Docker trust the self-signed certificate
+  copy:
+    src: "{{ cert_dir }}/registry_ca.crt"
+    dest: "/etc/ssl/certs/registry_ca.crt"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Update CA certificates
+  command: update-ca-certificates
+
+- name: Restart Docker to Apply New Certificates
+  systemd:
+    name: docker
+    state: restarted

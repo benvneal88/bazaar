@@ -1,0 +1,7 @@
+stacks:
+  - stack_name: load-balancer
+    env: dev
+    # services:
+    #   - service_name: bz-load-balancer
+    #     image_name: load-balancer
+          

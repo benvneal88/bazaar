@@ -1,0 +1,145 @@
+---
+# - name: Check if Swarm is already initialized
+#   command: docker info
+#   register: swarm_status
+#   changed_when: false
+
+# - name: Initialize Swarm on the first manager
+#   command: docker swarm init --advertise-addr {{ ansible_host }}
+#   when: "'Swarm: active' not in swarm_status.stdout"
+#   run_once: true
+#   register: swarm_init
+
+# - name: Get Swarm join-token for managers
+#   command: docker swarm join-token -q manager
+#   when: swarm_init.changed
+#   run_once: true
+#   register: manager_token
+
+# - name: Join additional managers to the swarm
+#   command: docker swarm join --token {{ manager_token.stdout }} {{ hostvars[groups['managers'][0]]['ansible_host'] }}:2377
+#   when: inventory_hostname != groups['managers'][0]
+
+# - name: Create Docker volume for registry storage
+#   command: docker volume create registry_data
+#   when: inventory_hostname == groups['managers'][0]
+
+
+# # Create self signed cert for registry
+# - name: Create certificate directory
+#   file:
+#     path: "{{ cert_dir }}"
+#     state: directory
+#     mode: "0755"
+
+# - name: Generate private key for registry (if not exists)
+#   openssl_privatekey:
+#     path: "{{ cert_dir }}/registry.key"
+#     size: 2048
+#     state: present
+#     type: RSA
+#     passphrase: ""
+#   when: inventory_hostname == groups['managers'][0]
+
+# - name: Remove old certs
+#   command: rm {{ item }}
+#   loop:
+#   - "{{ cert_dir }}/registry.csr"
+#   - "{{ cert_dir }}/registry_ca.crt"
+#   ignore_errors: true
+#   when: inventory_hostname == groups['managers'][0]
+
+# - name: Generate CSR for registry certificate with SAN
+#   openssl_csr:
+#     path: "{{ cert_dir }}/registry.csr"
+#     privatekey_path: "{{ cert_dir }}/registry.key"
+#     common_name: "registry.local"
+#     subject_alt_name: "DNS:registry.local{% for host in groups['vms'] %},IP:{{ hostvars[host]['ansible_host'] }}{% endfor %}"
+#     key_usage:
+#       - digitalSignature
+#       - keyEncipherment
+#     extended_key_usage:
+#       - serverAuth
+#   when: inventory_hostname == groups['managers'][0]
+
+# - name: Generate self-signed certificate for registry with SAN
+#   community.crypto.x509_certificate:
+#     path: "{{ cert_dir }}/registry_ca.crt"
+#     privatekey_path: "{{ cert_dir }}/registry.key"
+#     csr_path: "{{ cert_dir }}/registry.csr"
+#     provider: selfsigned
+#     selfsigned_not_after: "+365d"
+#     selfsigned_create_subject_key_identifier: create_if_not_provided
+#     selfsigned_digest: sha256
+#     selfsigned_version: 3
+#     state: present
+#   when: inventory_hostname == groups['managers'][0]
+
+# - name: Copy registry certificate locally for distribution to nodes
+#   fetch:
+#     src: "{{ cert_dir }}/registry_ca.crt"
+#     dest: "files/"
+#     flat: true
+#   when: inventory_hostname == groups['managers'][0]
+
+# - name: Create node ca cert directory
+#   file:
+#     path: "/etc/docker/certs.d/{{ registry_ip }}:{{ registry_port }}/"
+#     state: directory
+#     mode: "0755"
+
+# - name: Copy ca cert to swarm managers
+#   copy:
+#     src: "files/registry_ca.crt"
+#     dest: "/etc/docker/certs.d/{{ registry_ip }}:{{ registry_port }}/"
+
+# - name: Rename ca cert
+#   command: mv /etc/docker/certs.d/{{ registry_ip }}:{{ registry_port }}/registry_ca.crt /etc/docker/certs.d/{{ registry_ip }}:{{ registry_port }}/ca.crt
+
+# - name: Update CA certificates
+#   command: update-ca-certificates
+
+# - name: Restart Docker to Apply New Certificates
+#   systemd:
+#     name: docker
+#     state: restarted
+
+# - name: Ensure Docker Compose directory exists
+#   file:
+#     path: "{{ compose_dir }}"
+#     state: directory
+#     mode: "0755"
+#   when: inventory_hostname == groups['managers'][0]
+
+- name: Copy Docker Compose file for registry
+  copy:
+    dest: "{{ compose_dir }}/docker-compose.yml"
+    content: |
+      services:
+        registry:
+          image: registry:2
+          ports:
+            - "{{ registry_port }}:5000"
+          volumes:
+            - "{{ cert_dir }}:/certs"
+          environment:
+            REGISTRY_AUTH: "none"
+            REGISTRY_HTTP_ADDR: "0.0.0.0:5000"
+            REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/registry_ca.crt"
+            REGISTRY_HTTP_TLS_KEY: "/certs/registry.key"
+  when: inventory_hostname == groups['managers'][0]
+
+- name: Start and enable Docker Compose stack using V2
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_dir }}"
+    state: present
+    build: always
+    pull: always
+    renew_anon_volumes: true
+  when: inventory_hostname == groups['managers'][0]
+  register: output
+
+- name: Show Docker Compose Output
+  ansible.builtin.debug:
+    var: output
+  when: inventory_hostname == groups['managers'][0]

@@ -27,13 +27,12 @@
 #   shell: while lsof /var/lib/dpkg/lock-frontend ; do sleep 10 ; done;
 #   changed_when: false
 
-- name: Update and install packages
+- name: Install packages
   apt:
     name: "{{ item }}"
     state: present
   with_items: "{{ common_packages }}"
   
-- import_tasks: hashicorp.yml
 
 # - name: Install Bitwarden CLI
 #   unarchive:
@@ -60,3 +59,32 @@
     regexp: "^SystemMaxUse="
     line: "SystemMaxUse=100M"
 
+# Install Docker
+- name: Add Docker GPG key
+  ansible.builtin.shell: |
+    curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+- name: Add Docker repository
+  ansible.builtin.shell: |
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+- name: Install Docker
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: yes
+
+- name: Ensure Docker is running
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add user to docker group
+  user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes

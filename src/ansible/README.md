@@ -70,9 +70,17 @@ Once the Nodes are configured with PVE and added to the cluster create the VMs:
     
     ansible -i inventory/dev/hosts.yml vms -m ping
 
-# Setup Nomad, Consul and Vault
+# Setup Docker Swarm
 
-    ansible-playbook -i inventory/dev/hosts.yml playbooks/deploy.hashicorp.yml
+    ansible-playbook -i inventory/dev/hosts.yml playbooks/deploy.swarm.yml
+
+# Deploy Stack to Docker Swarm
+
+    ansible-playbook -i inventory/dev/hosts.yml playbooks/deploy.stack.yml
+
+    docker login https://192.168.1.10:5000
+    curl -v --cacert /etc/ssl/certs/registry_ca.crt https://192.168.1.10:5000/v2/
+
 
 <!-- 
 
