@@ -1,7 +1,13 @@
 stacks:
-  - stack_name: load-balancer
+  - stack_name: bz-traefik
     env: dev
-    # services:
-    #   - service_name: bz-load-balancer
-    #     image_name: load-balancer
-          
+    services:
+      - name: reverse-proxy
+        image: traefik:v3.0
+  - stack_name: bz-status
+    env: dev
+    services:
+      - name: whoami
+        image: traefik/whoami
+        replicas: 1
+

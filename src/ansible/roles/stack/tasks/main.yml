@@ -1,4 +1,22 @@
-- name: Copy stack directories on remote server
+- name: Delete old build directory
+  ansible.builtin.file:
+    path: "{{ swarm_manager_build_directory }}"
+    state: absent
+
+- name: Create build directory
+  ansible.builtin.file:
+    path: "{{ swarm_manager_build_directory }}"
+    state: directory
+    mode: '0755'
+
+- name: Create build directories for Stacks
+  ansible.builtin.file:
+    path: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/"
+    state: directory
+    mode: '0755'
+  loop: "{{ stacks }}"
+
+- name: Copy Stack services build files to Swarm Manager
   copy:
     src: "{{ item.stack_name }}/"
     dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/"
@@ -7,20 +25,35 @@
     mode: "0755"
   loop: "{{ stacks }}"
 
-- name: Create Stack Docker Compose 
+- name: Generate Docker Compose files for Stack
   ansible.builtin.template:
-      src: "{{ item.stack_name }}/docker-compose.yml.j2"
-      remote_src: false
-      dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
-      owner: root
-      group: root
-      mode: '0744'
+    src: "{{ item.stack_name }}/docker-compose.yml.j2"
+    remote_src: false
+    dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: '0744'
   loop: "{{ stacks }}"
 
-- name: Deploy Docker Stack
+- name: Get list of running services
+  command: docker service ls --format "{{ '{{' }} .Name {{ '}}' }}"
+  register: running_services
+  changed_when: false
+
+- name: Remove all services
+  command: docker service rm {{ item }}
+  loop: "{{ running_services.stdout_lines }}"
+  when: running_services.stdout_lines | length > 0
+
+# - name: Create overlay network
+#   community.docker.docker_network:
+#     name: "{{ swarm_traefik_network_name }}"
+#     driver: overlay
+#     state: present
+
+- name: Deploy Docker Stacks
   community.docker.docker_stack:
     state: present
     name: "{{ item.stack_name }}"
     compose: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
   loop: "{{ stacks }}"
-

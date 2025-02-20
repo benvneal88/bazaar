@@ -13,3 +13,4 @@ cert_dir: "/etc/docker/certs"
 registry_host: "manager-110"
 registry_ip: "192.168.1.10"
 registry_port: 5000
+swarm_traefik_network_name: bz-traefik-net
