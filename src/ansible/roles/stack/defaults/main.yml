@@ -1,1 +1,5 @@
 swarm_manager_build_directory: /etc/bazaar/builds
+traefik_cloudflare_certs:
+  - "cloudflare_cert.pem"
+  - "cloudflare_key.key"
+  - "origin_ca_rsa_root.pem"

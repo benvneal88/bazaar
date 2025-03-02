@@ -1,3 +1,24 @@
+---
+# - name: Copy Cloudflare certificate file to remote host
+#   copy:
+#     src: "{{ item }}"
+#     dest: "/tmp/{{ item }}"
+#     mode: '0600'
+#   loop: "{{ traefik_cloudflare_certs }}"
+#   when: inventory_hostname == groups['managers'][0]
+
+# - name: Create Cloudflare Secrets
+#   command: cat /tmp/{{ item }} | docker secret create {{ item }} -
+#   loop: "{{ traefik_cloudflare_certs }}"
+#   when: inventory_hostname == groups['managers'][0]
+
+# - name: Remove temporary certificate and key files
+#   file:
+#     path: "/tmp/{{ item }}"
+#     state: absent
+#   loop: "{{ traefik_cloudflare_certs }}"
+#   when: inventory_hostname == groups['managers'][0]
+
 - name: Delete old build directory
   ansible.builtin.file:
     path: "{{ swarm_manager_build_directory }}"
@@ -16,7 +37,7 @@
     mode: '0755'
   loop: "{{ stacks }}"
 
-- name: Copy Stack services build files to Swarm Manager
+- name: Copy Stack services files to Swarm
   copy:
     src: "{{ item.stack_name }}/"
     dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/"
@@ -24,6 +45,24 @@
     group: root
     mode: "0755"
   loop: "{{ stacks }}"
+
+- name: Get list of running services
+  command: docker service ls --format "{{ '{{' }} .Name {{ '}}' }}"
+  register: running_services
+  changed_when: false
+  run_once: true
+
+- name: Remove all services
+  command: docker service rm {{ item }}
+  loop: "{{ running_services.stdout_lines }}"
+  when: running_services.stdout_lines | length > 0
+  run_once: true
+
+# - name: Create overlay network
+#   community.docker.docker_network:
+#     name: "{{ swarm_traefik_network_name }}"
+#     driver: overlay
+#     state: present
 
 - name: Generate Docker Compose files for Stack
   ansible.builtin.template:
@@ -34,22 +73,7 @@
     group: root
     mode: '0744'
   loop: "{{ stacks }}"
-
-- name: Get list of running services
-  command: docker service ls --format "{{ '{{' }} .Name {{ '}}' }}"
-  register: running_services
-  changed_when: false
-
-- name: Remove all services
-  command: docker service rm {{ item }}
-  loop: "{{ running_services.stdout_lines }}"
-  when: running_services.stdout_lines | length > 0
-
-# - name: Create overlay network
-#   community.docker.docker_network:
-#     name: "{{ swarm_traefik_network_name }}"
-#     driver: overlay
-#     state: present
+  when: inventory_hostname == groups['managers'][0]
 
 - name: Deploy Docker Stacks
   community.docker.docker_stack:
@@ -57,3 +81,4 @@
     name: "{{ item.stack_name }}"
     compose: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
   loop: "{{ stacks }}"
+  when: inventory_hostname == groups['managers'][0]

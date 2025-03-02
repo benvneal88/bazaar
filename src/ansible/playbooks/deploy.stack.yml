@@ -1,5 +1,5 @@
 - name: Build and deploy core services
-  hosts: managers[0]
+  hosts: managers
   become: true
   vars_files:
   - ../vars/secrets.yml

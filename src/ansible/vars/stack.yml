@@ -7,7 +7,13 @@ stacks:
   - stack_name: bz-status
     env: dev
     services:
-      - name: whoami
+      - name: status
         image: traefik/whoami
         replicas: 1
-
+  # - stack_name: bz-it-tools
+  #   env: dev
+  #   services:
+  #     - name: it-tools
+  #       image: corentinth/it-tools
+        
+  #       replicas: 1

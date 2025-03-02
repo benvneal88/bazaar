@@ -9,13 +9,11 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.{{ service.name }}.rule=Host(`{{ service.name }}.bazaarlab.net`)"
-        - "traefik.http.routers.{{ service.name }}.entrypoints=websecure"
-        - "traefik.http.routers.{{ service.name }}.tls=true"
+        - "traefik.http.routers.{{ item.stack_name }}.rule=Host(`whoami.local`)"
+        - "traefik.http.routers.{{ item.stack_name }}.entrypoints=web"
         - "traefik.http.services.{{ service.name }}.loadbalancer.server.port=80"
-        #- "traefik.http.services.{{ service.name }}.loadbalancer.serversTransport=cloudflareTransport"
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
         max_attempts: 3
       replicas: {{ service.replicas }}
   {% endfor %}
