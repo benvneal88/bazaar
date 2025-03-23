@@ -5,7 +5,7 @@ services:
     image: traefik:v3.0
     networks:
       - {{ swarm_traefik_network_name }}
-      
+      - {{ swarm_internal_network_name }}
     environment:
       - CF_DNS_API_TOKEN={{ cloudflare_api_token }} # Cloudflare API Token
     volumes:
@@ -45,4 +45,9 @@ services:
 
 networks:
   {{ swarm_traefik_network_name }}:
-    driver: overlay
+    name: {{ swarm_traefik_network_name }}
+    external: true
+  {{ swarm_internal_network_name }}:
+    name: {{ swarm_internal_network_name }}
+    external: true
+

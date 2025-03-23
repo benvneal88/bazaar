@@ -44,11 +44,14 @@
   when: running_services.stdout_lines | length > 0
   run_once: true
 
-# - name: Create overlay network
-#   community.docker.docker_network:
-#     name: "{{ swarm_traefik_network_name }}"
-#     driver: overlay
-#     state: present
+- name: Create Docker networks
+  community.docker.docker_network:
+    name: "{{ item.name }}"
+    driver: "{{ item.driver }}"
+    internal: "{{ item.internal }}"
+    scope: "{{ item.scope }}"
+  loop: "{{ networks }}"
+  when: inventory_hostname == groups['managers'][0]
 
 - name: Generate Docker Compose files for Stack
   ansible.builtin.template:

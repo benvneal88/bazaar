@@ -4,6 +4,7 @@
   vars_files:
   - ../vars/secrets.yml
   - ../vars/stack.yml
+  - ../vars/network.yml
   - ../vars/commons.yml
   roles:
     - role: stack

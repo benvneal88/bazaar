@@ -1,0 +1,14 @@
+networks:
+  - name: bz-public-net
+    scope: swarm
+    driver: overlay
+    internal: true
+  #   interal: false
+  # - name: dockerproxy-net
+  #   scope: swarm
+  #   driver: overlay
+  #   interal: true
+  - name: bz-internal-net
+    scope: swarm
+    driver: overlay
+    internal: true

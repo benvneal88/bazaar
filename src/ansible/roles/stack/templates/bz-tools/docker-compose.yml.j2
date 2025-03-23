@@ -5,7 +5,7 @@ services:
   {{ service.name }}:
     image: {{ service.image }}
     networks:
-      - bz-traefik_{{ swarm_traefik_network_name }}
+      - {{ swarm_internal_network_name }}
     deploy:
       labels:
         - "traefik.enable=true"
@@ -17,8 +17,10 @@ services:
       restart_policy:
         condition: on-failure
         max_attempts: 3
-      replicas: {{ service.replicas }}
+      replicas: 1
 {% endfor %}
 
 networks:
-  bz-traefik_{{ swarm_traefik_network_name }}:
+  {{ swarm_internal_network_name }}:
+    name: {{ swarm_internal_network_name }}
+    external: true
