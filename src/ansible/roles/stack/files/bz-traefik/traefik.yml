@@ -5,47 +5,40 @@ global:
 entryPoints:
   web:
     address: ":80"
-    # http:
-    #   redirections:
-    #     entryPoint:
-    #       to: websecure
-    #       scheme: https
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
   websecure:
     address: ":443"
     http:
-      tls: {}  # Enable TLS for this entrypoint
+      tls:
+        certResolver: cloudflare
+
+serversTransport:
+  insecureSkipVerify: true
 
 api:
   dashboard: true
-  insecure: false  # Set to true if you want the dashboard exposed (not recommended publicly)
+  insecure: false  # Set to true if you want the dashboard exposed (not recommended publily)
 
 providers:
-  file:
-    directory: /etc/traefik
-    watch: true
   swarm:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
 
-tls:
-  certificates:
-   - certFile: /run/secrets/cloudflare_cert.pem
-     keyFile: /run/secrets/cloudflare_key.key
-
-# tls:
-#   stores:
-#     default:
-#       defaultCertificate:
-#         certFile: "/run/secrets/cloudflare_cert.pem"
-#         keyFile: "/run/secrets/cloudflare_key.key"
-
-# tls:
-#   stores:
-#     default:
-#       defaultGeneratedCert:
-#         resolver: cloudflare
-#         domain:
-#           main: bazaarlab.net
-#           sans:
-#             - status.bazaarlab.net
-#             - traefik.bazaarlab.net
+certificatesResolvers:
+  cloudflare:
+    acme:
+      # caServer: https://acme-v02.api.letsencrypt.org/directory # production (default)
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory # staging (testing)
+      email: zzz@gmail.com # Cloudflare email (or other provider)
+      storage: /acme.json
+      dnsChallenge:
+        delayBeforeCheck: 30
+        provider: cloudflare
+        # disablePropagationCheck: true # Some people using Cloudflare note this can solve DNS propagation issues.
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"

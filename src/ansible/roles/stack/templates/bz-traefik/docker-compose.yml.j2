@@ -5,17 +5,13 @@ services:
     image: traefik:v3.0
     networks:
       - {{ swarm_traefik_network_name }}
-    secrets:
-      - cloudflare_cert.pem
-      - cloudflare_key.key
-      - origin_ca_rsa_root.pem
-    command:
-      - --providers.file.directory=/run/secrets/
-      - --providers.file.watch=true
+      
+    environment:
+      - CF_DNS_API_TOKEN={{ cloudflare_api_token }} # Cloudflare API Token
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/traefik.yml:/etc/traefik/traefik.yml:ro"
-      - "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/dynamic_conf.yml:/etc/traefik/dynamic_conf.yml:ro"
+      - "/acme.json:/acme.json"
     ports:
       - "80:80"     # HTTP Traffic
       - "443:443"   # HTTPS Traffic
@@ -25,30 +21,28 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-        max_attempts: 10
+        max_attempts: 3
       placement:
         constraints:
           - "node.role==manager"
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.api.rule=Host(`traefik.bazaarlab.net`)"
-        - "traefik.http.routers.api.entrypoints=websecure"
-        - "traefik.http.routers.api.service=api@internal"
-        - "traefik.http.routers.api.middlewares=auth"
-        - "traefik.http.middlewares.auth.basicauth.users={{ traefik_dashboard_auth }}"
-        - "traefik.http.services.api.loadbalancer.server.port=80"
-        - "traefik.http.routers.api.tls=true"
-        - "traefik.http.routers.api.tls.domains[0].main=bazaarlab.net"
-        - "traefik.http.routers.api.tls.domains[0].sans=*.bazaarlab.net"
+        - "traefik.http.routers.traefik.entrypoints=web"
+        - "traefik.http.routers.traefik.rule=Host(`traefik-dashboard.bazaarlab.net`)"
+        - "traefik.http.middlewares.traefik-auth.basicauth.users={{ traefik_dashboard_auth }}"
+        - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+        - "traefik.http.services.web.loadbalancer.server.port=80"
+        - "traefik.http.routers.traefik-secure.entrypoints=websecure"
+        - "traefik.http.routers.traefik-secure.rule=Host(`traefik-dashboard.bazaarlab.net`)"
+        - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+        - "traefik.http.routers.traefik-secure.tls=true"
+        - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+        - "traefik.http.routers.traefik-secure.tls.domains[0].main=bazaarlab.net"
+        - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.bazaarlab.net"
+        - "traefik.http.routers.traefik-secure.service=api@internal"
+
 
 networks:
   {{ swarm_traefik_network_name }}:
     driver: overlay
-
-secrets:
-  cloudflare_cert.pem:
-    external: true
-  cloudflare_key.key:
-    external: true
-  origin_ca_rsa_root.pem:
-    external: true

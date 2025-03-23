@@ -1,23 +1,9 @@
 ---
-# - name: Copy Cloudflare certificate file to remote host
-#   copy:
-#     src: "{{ item }}"
-#     dest: "/tmp/{{ item }}"
-#     mode: '0600'
-#   loop: "{{ traefik_cloudflare_certs }}"
-#   when: inventory_hostname == groups['managers'][0]
 
-# - name: Create Cloudflare Secrets
-#   command: cat /tmp/{{ item }} | docker secret create {{ item }} -
-#   loop: "{{ traefik_cloudflare_certs }}"
-#   when: inventory_hostname == groups['managers'][0]
+######################
+## Delete and Deploy Stacks to Swarm
+######################
 
-# - name: Remove temporary certificate and key files
-#   file:
-#     path: "/tmp/{{ item }}"
-#     state: absent
-#   loop: "{{ traefik_cloudflare_certs }}"
-#   when: inventory_hostname == groups['managers'][0]
 
 - name: Delete old build directory
   ansible.builtin.file:

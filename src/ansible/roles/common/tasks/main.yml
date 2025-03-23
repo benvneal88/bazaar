@@ -88,3 +88,17 @@
     name: "{{ ansible_user }}"
     groups: docker
     append: yes
+
+- name: Delete acme file
+  ansible.builtin.file:
+    path: "/acme.json"
+    state: absent
+
+- name: Create empty ACME key file if it doesn't exist for SSL
+  copy:
+    content: ""
+    dest: "/acme.json"
+    force: true
+    owner: 1000
+    group: 1000
+    mode: '0600'

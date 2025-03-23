@@ -4,16 +4,12 @@ stacks:
     services:
       - name: reverse-proxy
         image: traefik:v3.0
-  - stack_name: bz-status
+  - stack_name: bz-tools
     env: dev
     services:
-      - name: status
+      - name: test
         image: traefik/whoami
         replicas: 1
-  # - stack_name: bz-it-tools
-  #   env: dev
-  #   services:
-  #     - name: it-tools
-  #       image: corentinth/it-tools
-        
-  #       replicas: 1
+      - name: ittools
+        image: corentinth/it-tools
+        replicas: 1
