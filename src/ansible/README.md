@@ -78,48 +78,54 @@ Once the Nodes are configured with PVE and added to the cluster create the VMs:
 
     ansible-playbook -i inventory/dev/hosts.yml playbooks/deploy.stack.yml
 
-    docker login https://192.168.1.10:5000
     curl -v --cacert /etc/ssl/certs/registry_ca.crt https://192.168.1.10:5000/v2/
 
+# Setup Secret Management
 
-<!-- 
+Create ansible vault password file with vault password in it
 
-## Setup Proxmox VMs
+    ansible-vault create vaults/dev_core.yml --vault-id dev@vaults/.vault_password
+    ansible-vault create vaults/dev_tools.yml --vault-id dev@vaults/.vault_password
 
+    ansible-vault create vaults/dev.yml --vault-id dev@vaults/.vault_password
+    ansible-vault create vaults/prod.yml --vault-id prod@vaults/.vault_password
 
-We will use Terraform to manage the resources within Proxmox
+    ansible-vault edit vaults/dev.yml --vault-id dev@vaults/.vault_password
+    ansible-vault edit vaults/prod.yml --vault-id prod@vaults/.vault_password
 
-Install Terraform on your local machine
+Run the playbook below to sync the ansible vault secrets with swarm. Each item will get a different secret. Secrets that start with `bz-` will get deleted and re-created.
+    
+    ansible-playbook -i inventory/dev/hosts.yml playbooks/deploy.swarm_secrets.yml --vault-id dev@vaults/.vault_password
 
-    brew tap hashicorp/tap
-    brew install hashicorp/tap/terraform
-    brew update
-    brew upgrade hashicorp/tap/terraform
+Create Traefik dashboard password. Place string in vars/secrets.yaml traefik_dashboard_auth
 
+    htpasswd -nb admin yourpassword
+    
+    
 
-Create Proxmox User for Terraform
+# Troubleshooting
 
-SSH into the a PVE host:
+    docker service ls
+    docker service logs bz-traefik_reverse-proxy
 
-    pveum role add TerraformProv -privs "Datastore.AllocateSpace Datastore.Audit Pool.Allocate Sys.Audit Sys.Console Sys.Modify VM.Allocate VM.Audit VM.Clone VM.Config.CDROM VM.Config.Cloudinit VM.Config.CPU VM.Config.Disk VM.Config.HWType VM.Config.Memory VM.Config.Network VM.Config.Options VM.Migrate VM.Monitor VM.PowerMgmt SDN.Use"
-    pveum user add terraform-prov@pve --password <password>
-    pveum aclmod / -user terraform-prov@pve -role TerraformProv
+    curl -H Host:status.bazaarlab.net 192.168.1.20
+    curl -H "Host: traefik.bazaarlab.net" 192.168.1.20:8080/api/rawdata
+    curl -H "Host: traefik.bazaarlab.net"
+    curl -H "Host: status.bazaarlab.net" http://localhost:80
+    curl -v https://status.bazaarlab.net
+    curl -vk https://73.13.0.179
+    nc -zv 73.13.0.179 80
+    curl -H "Host: status.bazaarlab.net" http://localhost
+    curl -H "Host: status.bazaarlab.net" http://status.bazaarlab.net
+    curl -H "Host: traefik.bazaarlab.net" http://traefik.bazaarlab.net/api/rawdata
+    curl  -I -H "Host: status.bazaarlab.net" http://localhost
+    openssl s_client -connect bazaarlab.net:443 -servername status.bazaarlab.net
+    openssl s_client -connect 192.168.1.10:443 -servername status.bazaarlab.net
 
-Follow Terraform-for-Promox installation instructions to set up the proxmox provider
+    curl -vk --resolve status.bazaarlab.net:443:127.0.0.1 https://status.bazaarlab.net
+    
 
-https://github.com/Terraform-for-Proxmox/terraform-provider-proxmox
-https://registry.tf-registry-prod-use1.terraform.io/providers/Terraform-for-Proxmox/proxmox/latest/docs/guides/installation
-
-
-    git clone git@github.com:Terraform-for-Proxmox/terraform-provider-proxmox.git
-    cd terraform-provider-proxmox
-    go install github.com/Terraform-for-Proxmox/terraform-provider-proxmox/v2@latest
-    make
-    version=0.0.1
-    arch=linux_arm64
-    mkdir -p ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
-    cp bin/terraform-provider-proxmox ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/
-    ls -al ~/.terraform.d/plugins/local.registry.com/Terraform-for-Proxmox/proxmox/${version}/${linux_arm64}/ -->
+    curl -vk https://traefik.bazaarlab.net
 
 
 ## Troubleshooting Networking

@@ -1,15 +1,19 @@
 stacks:
-  - stack_name: bz-traefik
+  - stack_name: bz-core
     env: dev
-    services:
-      - name: reverse-proxy
-        image: traefik:v3.0
   - stack_name: bz-tools
     env: dev
     services:
       - name: test
-        image: traefik/whoami
-        replicas: 1
+        image: traefik/whoami:latest
       - name: ittools
         image: corentinth/it-tools
-        replicas: 1
+      - name: dozzle
+        image: amir20/dozzle:latest
+        deploy_mode: global
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+        environment:
+          - DOZZLE_LEVEL=debug
+          - DOZZLE_MODE=swarm
+          - DOZZLE_AUTH_PROVIDER=simple

@@ -23,51 +23,105 @@
     mode: '0755'
   loop: "{{ stacks }}"
 
-- name: Copy Stack services files to Swarm
-  copy:
-    src: "{{ item.stack_name }}/"
-    dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/"
-    owner: root
-    group: root
-    mode: "0755"
-  loop: "{{ stacks }}"
+# - name: Copy Stack files to Swarm hosts
+#   copy:
+#     src: "{{ item.stack_name }}/"
+#     dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/"
+#     owner: root
+#     group: root
+#     mode: "0755"
+#   loop: "{{ stacks }}"
 
-- name: Get list of running services
-  command: docker service ls --format "{{ '{{' }} .Name {{ '}}' }}"
-  register: running_services
-  changed_when: false
+- name: Get list of stacks
+  find:
+    paths: "."
+    file_type: directory
+    depth: 1
+  register: stack_dirs
+  delegate_to: localhost
   run_once: true
 
-- name: Remove all services
-  command: docker service rm {{ item }}
-  loop: "{{ running_services.stdout_lines }}"
-  when: running_services.stdout_lines | length > 0
-  run_once: true
 
-- name: Create Docker networks
-  community.docker.docker_network:
-    name: "{{ item.name }}"
-    driver: "{{ item.driver }}"
-    internal: "{{ item.internal }}"
-    scope: "{{ item.scope }}"
-  loop: "{{ networks }}"
-  when: inventory_hostname == groups['managers'][0]
+- name: debug
+  debug:
+    var: stack_dirs
 
-- name: Generate Docker Compose files for Stack
-  ansible.builtin.template:
-    src: "{{ item.stack_name }}/docker-compose.yml.j2"
-    remote_src: false
-    dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
-    owner: root
-    group: root
-    mode: '0744'
-  loop: "{{ stacks }}"
-  when: inventory_hostname == groups['managers'][0]
 
-- name: Deploy Docker Stacks
-  community.docker.docker_stack:
-    state: present
-    name: "{{ item.stack_name }}"
-    compose: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
-  loop: "{{ stacks }}"
-  when: inventory_hostname == groups['managers'][0]
+- name: Loop over stacks and template config files
+  block:
+    - name: Find config templates for stack
+      find:
+        paths: "{{ item.path }}"
+        patterns: "*.j2"
+        recurse: no
+      loop: "{{ stack_dirs.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      register: found_templates_per_stack
+
+- name: Flatten templates into a list of stack/template pairs
+  set_fact:
+    all_templates: >-
+      {{
+        all_templates | default([]) + 
+        [
+          {
+            'stack': item.item.path | basename,
+            'template_path': file.path
+          }
+          for file in item.files
+        ]
+      }}
+  loop: "{{ found_templates_per_stack.results }}"
+  when: item.files | length > 0
+
+- name: Template and copy each config file
+  template:
+    src: "{{ item.template.path }}"
+    dest: "{{ swarm_manager_build_directory }}/{{ item.stack }}/{{ item.template.path | basename | regex_replace('\\.j2$', '') }}"
+    mode: '0644'
+  loop: "{{ all_templates }}"
+
+
+
+
+
+# - name: Get list of running services
+#   command: docker service ls --format "{{ '{{' }} .Name {{ '}}' }}"
+#   register: running_services
+#   changed_when: false
+#   run_once: true
+
+# - name: Remove all services
+#   command: docker service rm {{ item }}
+#   loop: "{{ running_services.stdout_lines }}"
+#   when: running_services.stdout_lines | length > 0
+#   run_once: true
+
+# - name: Create Docker networks
+#   community.docker.docker_network:
+#     name: "{{ item.name }}"
+#     driver: "{{ item.driver }}"
+#     internal: "{{ item.internal }}"
+#     scope: "{{ item.scope }}"
+#   loop: "{{ networks }}"
+#   when: inventory_hostname == groups['managers'][0]
+
+# - name: Generate Docker Compose files for Stack
+#   ansible.builtin.template:
+#     src: "{{ item.stack_name }}/docker-compose.yml.j2"
+#     remote_src: false
+#     dest: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
+#     owner: root
+#     group: root
+#     mode: '0744'
+#   loop: "{{ stacks }}"
+#   when: inventory_hostname == groups['managers'][0]
+
+# - name: Deploy Docker Stacks
+#   community.docker.docker_stack:
+#     state: present
+#     name: "{{ item.stack_name }}"
+#     compose: "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/docker-compose.yml"
+#   loop: "{{ stacks }}"
+#   when: inventory_hostname == groups['managers'][0]

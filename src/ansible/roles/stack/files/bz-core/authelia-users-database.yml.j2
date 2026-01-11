@@ -1,0 +1,13 @@
+# hash password before saving to yaml
+# htpasswd -nbB youruser yourpassword
+users:
+  - username: ben.admin
+    password: "$apr1$BaU62IJw$vnOD/b/Hz3wiE3V9t9kyn0"
+    email: ben.admin@bazaarlab.net
+    groups:
+      - admins
+  - username: ben.mmfm
+    password: "$apr1$BaU62IJw$vnOD/b/Hz3wiE3V9t9kyn0"
+    email: ben.mmfm@bazaarlab.net
+    groups:
+      - mmfm-users

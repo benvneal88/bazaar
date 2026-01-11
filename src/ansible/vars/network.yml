@@ -3,11 +3,11 @@ networks:
     scope: swarm
     driver: overlay
     internal: true
-  #   interal: false
-  # - name: dockerproxy-net
-  #   scope: swarm
-  #   driver: overlay
-  #   interal: true
+    interal: false
+  - name: bz-docker-socket-proxy-net
+    scope: swarm
+    driver: overlay
+    internal: true
   - name: bz-internal-net
     scope: swarm
     driver: overlay

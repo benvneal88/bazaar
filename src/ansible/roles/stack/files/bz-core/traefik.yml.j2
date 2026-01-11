@@ -21,10 +21,11 @@ serversTransport:
 
 api:
   dashboard: true
-  insecure: false  # Set to true if you want the dashboard exposed (not recommended publily)
+  insecure: true  # Set to true if you want the dashboard exposed (not recommended publily)
 
 providers:
   swarm:
+    #endpoint: "tcp://docker-socket-proxy:2375"
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
 
@@ -33,7 +34,7 @@ certificatesResolvers:
     acme:
       # caServer: https://acme-v02.api.letsencrypt.org/directory # production (default)
       # caServer: https://acme-staging-v02.api.letsencrypt.org/directory # staging (testing)
-      email: zzz@gmail.com # Cloudflare email (or other provider)
+      email: bneal16@gmail.com # Cloudflare email (or other provider)
       storage: /acme.json
       dnsChallenge:
         delayBeforeCheck: 30

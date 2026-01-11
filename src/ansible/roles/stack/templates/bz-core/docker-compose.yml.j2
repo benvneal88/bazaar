@@ -1,0 +1,132 @@
+version: "3.8"
+
+services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:edge
+    networks:
+      - {{ swarm_docker_socket_proxy_network_name }}
+    privileged: true
+    environment:
+      - CONTAINERS=1  # Allow listing and inspecting containers
+      - SERVICES=1    # Allow listing and inspecting services (Swarm)
+      - NETWORKS=1    # Allow listing networks
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      placement:
+        constraints:
+          - "node.role==manager"
+        
+  traefik-reverse-proxy:
+    image: traefik:v3.0
+    networks:
+      - {{ swarm_traefik_network_name }}
+      - {{ swarm_internal_network_name }}
+      - {{ swarm_docker_socket_proxy_network_name }}
+    environment:
+      - CF_DNS_API_TOKEN={{ cloudflare_api_token }} # Cloudflare API Token
+      - DOCKER_HOST=tcp://docker-socket-proxy:2375
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "/acme.json:/acme.json"
+    ports:
+      - "80:80"     # HTTP Traffic
+      - "443:443"   # HTTPS Traffic
+      - "8080:8080" # Traefik Dashboard
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      placement:
+        constraints:
+          - "node.role==manager"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.traefik.rule=Host(`traefik-dashboard.bazaarlab.net`)"
+        - "traefik.http.routers.traefik.entrypoints=web"
+        - "traefik.http.services.web.loadbalancer.server.port=80"
+        # TLS
+        - "traefik.http.routers.traefik-secure.rule=Host(`traefik-dashboard.bazaarlab.net`)"
+        - "traefik.http.routers.traefik-secure.entrypoints=websecure"
+        - "traefik.http.routers.traefik-secure.tls=true"
+        - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+        - "traefik.http.routers.traefik-secure.tls.domains[0].main=bazaarlab.net"
+        - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.bazaarlab.net"
+        # Redirect
+        - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+        # Authentication
+        - "traefik.http.middlewares.traefik-auth.basicauth.users={{ traefik_dashboard_auth }}"
+        - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+        - "traefik.http.routers.traefik-secure.service=api@internal"
+
+  authelia:
+    image: image: authelia/authelia:latest
+    networks:
+      - {{ swarm_internal_network_name }}
+    volumes:
+      - "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/authelia-users-database.yml:/config/users_database.yml"
+      - "{{ swarm_manager_build_directory }}/{{ item.stack_name }}/authelia-config:/config"
+    deploy:
+      labels:
+        - 'traefik.enable=true'
+        - 'traefik.http.routers.authelia.rule=Host(`auth.bazaarlab.net`)'
+        - 'traefik.http.routers.authelia.entrypoints=web'
+        - "traefik.http.services.authelia.loadbalancer.server.port=9091"
+        # TLS
+        - "traefik.http.routers.authelias.rule=Host(`auth.bazaarlab.net`)"
+        - "traefik.http.routers.authelias.entrypoints=websecure"
+        - "traefik.http.routers.authelias.tls.certresolver=cloudflare"
+        # Redirect
+        - "traefik.http.routers.authelia.middlewares=https_redirect"
+        - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
+        # Authelia
+        - 'traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://auth.bazaarlab.net'
+        - 'traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true'
+        - 'traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User, Remote-Groups'
+        - "traefik.http.routers.authelia.service=authelia"
+
+  postgres: 
+    image: postgres:16
+        networks:
+      - {{ swarm_internal_network_name }}
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - 'traefik.enable=falses'
+
+volumes:
+  pgdata:
+       
+networks:
+  {{ swarm_traefik_network_name }}:
+    name: {{ swarm_traefik_network_name }}
+    external: true
+  {{ swarm_internal_network_name }}:
+    name: {{ swarm_internal_network_name }}
+    external: true
+  {{ swarm_docker_socket_proxy_network_name }}:
+    name: {{ swarm_docker_socket_proxy_network_name }}
+    external: true
+
+
+
+
+

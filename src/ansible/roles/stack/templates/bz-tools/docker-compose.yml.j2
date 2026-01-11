@@ -6,6 +6,18 @@ services:
     image: {{ service.image }}
     networks:
       - {{ swarm_internal_network_name }}
+{% if service.environment | default(false) %}
+    environment:
+{% for environment in service.environment %}
+      - {{ environment }}
+{% endfor %}
+{% endif %}
+{% if service.volumes | default(false) %}
+    volumes:
+{% for volumes in service.volumes %}
+      - {{ volumes }}
+{% endfor %}
+{% endif %}
     deploy:
       labels:
         - "traefik.enable=true"
@@ -13,11 +25,18 @@ services:
         - "traefik.http.routers.{{ service.name }}.entrypoints=websecure"
         - "traefik.http.routers.{{ service.name }}.tls=true"
         - "traefik.http.routers.{{ service.name }}.tls.certresolver=cloudflare"
-        - "traefik.http.services.web.loadbalancer.server.port=80"
+        - "traefik.http.services.{{ service.name }}.loadbalancer.server.port=80"
+        - "traefik.http.routers.{{ service.name }}.middlewares=authelia@docker
       restart_policy:
         condition: on-failure
         max_attempts: 3
+{% if service.deploy_mode | default(false) %}
+      mode: {{ service.deploy_mode }}
+{% elif service.deploy_replicas | default(false) %}
+      replicas: {{ service.deploy_replicas }}
+{% else %}
       replicas: 1
+{% endif %}
 {% endfor %}
 
 networks:
